@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b91c1c" />
+      <stop offset="100%" stop-color="#7f1d1d" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#bgGrad)" stroke="#fef3c7" stroke-width="12" />
+
+  <!-- Crown on Top -->
+  <path d="M 186 140 L 210 175 L 256 125 L 302 175 L 326 140 L 316 195 L 196 195 Z" fill="url(#goldGrad)" />
+  <circle cx="186" cy="132" r="8" fill="#fbbf24" />
+  <circle cx="256" cy="117" r="10" fill="#fbbf24" />
+  <circle cx="326" cy="132" r="8" fill="#fbbf24" />
+
+  <!-- Main Crab Body Silhouette -->
+  <path d="M 160 270 C 160 210, 352 210, 352 270 C 352 330, 160 330, 160 270 Z" fill="#ffffff" />
+
+  <!-- Claws Left -->
+  <path d="M 170 230 C 120 180, 100 230, 135 255 C 150 265, 170 245, 170 230 Z" fill="url(#goldGrad)" />
+  <!-- Claws Right -->
+  <path d="M 342 230 C 392 180, 412 230, 377 255 C 362 265, 342 245, 342 230 Z" fill="url(#goldGrad)" />
+
+  <!-- 3 Regional Waves at Bottom -->
+  <path d="M 140 375 Q 180 355, 220 375 T 300 375 T 380 375" fill="none" stroke="url(#goldGrad)" stroke-width="14" stroke-linecap="round" />
+  <path d="M 160 405 Q 200 390, 240 405 T 320 405 T 360 405" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.9" />
+
+  <!-- Eyes -->
+  <circle cx="226" cy="245" r="10" fill="#7f1d1d" />
+  <circle cx="286" cy="245" r="10" fill="#7f1d1d" />
+</svg>
