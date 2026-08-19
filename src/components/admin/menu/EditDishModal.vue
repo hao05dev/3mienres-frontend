@@ -198,7 +198,7 @@ const submitForm = async () => {
     if (imageFile.value) {
       const formData = new FormData();
       formData.append("image", imageFile.value);
-      const uploadRes = await api.post("/uploads", formData, {
+      const uploadRes = await api.post(`/uploads?name=${encodeURIComponent(form.name || props.dish?.name || "dish")}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       finalImageUrl = uploadRes.data.url;

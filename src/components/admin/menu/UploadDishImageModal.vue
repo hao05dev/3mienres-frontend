@@ -85,8 +85,8 @@ const handleUpload = async () => {
     const formData = new FormData();
     formData.append("image", selectedFile.value);
 
-    // 1. Upload ảnh lên server
-    const uploadRes = await api.post("/uploads", formData, {
+    // 1. Upload ảnh lên server (đổi tên theo slug của món ăn)
+    const uploadRes = await api.post(`/uploads?name=${encodeURIComponent(props.dish.name || props.dish.slug || "dish")}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
 
