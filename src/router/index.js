@@ -16,6 +16,7 @@ import LoginView from "../views/customer/LoginView.vue";
 import RegisterView from "../views/customer/RegisterView.vue";
 import GuestOrderView from "../views/customer/GuestOrderView.vue";
 import ProfileView from "../views/customer/ProfileView.vue";
+import NotFoundView from "../views/NotFoundView.vue";
 
 // Admin / POS Views
 import DashboardView from "../views/admin/DashboardView.vue";
@@ -77,7 +78,8 @@ const routes = [
   },
   {
     path: "/:pathMatch(.*)*",
-    redirect: "/",
+    name: "not-found",
+    component: NotFoundView,
   },
 ];
 

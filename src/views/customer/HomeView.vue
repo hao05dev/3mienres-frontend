@@ -65,10 +65,12 @@
           </router-link>
         </div>
 
-        <div v-if="menuStore.loading" class="text-center py-5">
-          <div class="spinner-border text-danger" role="status"></div>
-          <p class="text-muted small mt-2">Đang tải các món đặc sản...</p>
-        </div>
+        <!-- Skeleton Loading State -->
+        <DishSkeletonCard
+          v-if="menuStore.loading"
+          :count="4"
+          col-class="col-md-6 col-lg-3"
+        />
 
         <div v-else class="row g-4">
           <div v-for="dish in featuredDishes" :key="dish._id" class="col-md-6 col-lg-3">
@@ -132,6 +134,7 @@ import HeroSwiper from "../../components/HeroSwiper.vue";
 import { useMenuStore } from "../../stores/menuStore";
 import { useLangStore } from "../../stores/langStore";
 import { getImageUrl } from "../../utils/imageHelper";
+import DishSkeletonCard from "../../components/common/DishSkeletonCard.vue";
 
 const menuStore = useMenuStore();
 const langStore = useLangStore();

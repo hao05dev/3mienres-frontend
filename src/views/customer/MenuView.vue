@@ -85,11 +85,12 @@
         </div>
       </div>
 
-      <!-- Loading State -->
-      <div v-if="menuStore.loading" class="text-center py-5">
-        <div class="spinner-border text-danger" role="status"></div>
-        <p class="mt-2 text-muted small">{{ langStore.isEnglish ? 'Loading 3-Region menu...' : 'Đang tải danh sách thực đơn 3 miền...' }}</p>
-      </div>
+      <!-- Skeleton Loading State -->
+      <DishSkeletonCard
+        v-if="menuStore.loading"
+        :count="8"
+        col-class="col-xl-3 col-lg-4 col-md-6"
+      />
 
       <!-- Dishes Grid -->
       <div v-else-if="paginatedDishes.length > 0">
@@ -180,6 +181,7 @@ import { useMenuStore } from "../../stores/menuStore";
 import { useLangStore } from "../../stores/langStore";
 import { useRoute } from "vue-router";
 import { getImageUrl } from "../../utils/imageHelper";
+import DishSkeletonCard from "../../components/common/DishSkeletonCard.vue";
 
 const menuStore = useMenuStore();
 const langStore = useLangStore();
