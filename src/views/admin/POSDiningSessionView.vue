@@ -188,13 +188,12 @@ const openMergeModal = (session) => {
   showMergeModal.value = true;
 };
 
-const submitMergeSession = async (sourceSessionId) => {
+const submitMergeSession = async (payload) => {
   modalError.value = "";
   merging.value = true;
   try {
-    const res = await api.post(`/dining-sessions/${selectedSession.value._id}/merge`, {
-      sourceSessionId,
-    });
+    const data = typeof payload === "object" ? payload : { sourceSessionId: payload };
+    const res = await api.post(`/dining-sessions/${selectedSession.value._id}/merge`, data);
     toast.success(res.data.message || "Gộp bàn & hóa đơn thành công!");
     showMergeModal.value = false;
     await Promise.all([sessionStore.fetchActiveSessions(), tableStore.fetchTables()]);
