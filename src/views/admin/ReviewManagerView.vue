@@ -159,17 +159,42 @@
                 </td>
 
                 <td>
-                  <div class="d-flex align-items-center gap-2">
-                    <img
-                      :src="getImageUrl(r.dish?.image)"
-                      :alt="r.dish?.name"
-                      class="rounded-3 object-fit-cover flex-shrink-0"
-                      style="width: 38px; height: 38px;"
-                      onerror="this.src='/images/dishes/default-dish.jpg'"
-                    />
+                  <div class="d-flex align-items-center gap-2.5">
+                    <router-link
+                      :to="`/mon-an/${r.dish?.slug || r.dish?._id}`"
+                      target="_blank"
+                      class="flex-shrink-0 text-decoration-none"
+                      title="Mở xem món ăn này trên website"
+                    >
+                      <img
+                        :src="getImageUrl(r.dish?.image)"
+                        :alt="r.dish?.name"
+                        class="rounded-3 object-fit-cover shadow-2xs hover-scale"
+                        style="width: 42px; height: 42px;"
+                        onerror="this.src='/images/dishes/default-dish.jpg'"
+                      />
+                    </router-link>
                     <div class="min-w-0">
-                      <strong class="text-dark text-truncate d-block">{{ r.dish?.name || 'Món ăn' }}</strong>
-                      <span class="text-danger fs-9 fw-semibold">{{ r.dish?.price?.toLocaleString('vi-VN') }}đ</span>
+                      <router-link
+                        :to="`/mon-an/${r.dish?.slug || r.dish?._id}`"
+                        target="_blank"
+                        class="text-decoration-none text-dark fw-bold text-truncate d-block dish-link"
+                        title="Bấm để nhảy đến trang chi tiết món ăn"
+                      >
+                        {{ r.dish?.name || 'Món ăn' }}
+                        <i class="fa-solid fa-arrow-up-right-from-square text-danger fs-10 ms-1 opacity-75"></i>
+                      </router-link>
+                      <div class="d-flex align-items-center gap-1.5 mt-0.5">
+                        <span class="text-danger fs-9 fw-semibold">{{ r.dish?.price?.toLocaleString('vi-VN') }}đ</span>
+                        <router-link
+                          :to="`/mon-an/${r.dish?.slug || r.dish?._id}`"
+                          target="_blank"
+                          class="badge bg-danger bg-opacity-10 text-danger text-decoration-none rounded-pill px-2 py-0.5 fs-10 fw-bold hover-bg-danger"
+                          title="Nhảy đến trang chi tiết món ăn này trên Web"
+                        >
+                          <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Xem món
+                        </router-link>
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -207,7 +232,16 @@
                 </td>
 
                 <td class="text-center">
-                  <div class="btn-group btn-group-sm">
+                  <div class="btn-group btn-group-sm align-items-center">
+                    <router-link
+                      :to="`/mon-an/${r.dish?.slug || r.dish?._id}`"
+                      target="_blank"
+                      class="btn btn-outline-primary btn-sm rounded-circle me-1 d-inline-flex align-items-center justify-content-center"
+                      style="width: 28px; height: 28px;"
+                      title="Nhảy đến trang chi tiết món ăn này trên website"
+                    >
+                      <i class="fa-solid fa-arrow-up-right-from-square fs-9"></i>
+                    </router-link>
                     <button
                       @click="openReplyModal(r)"
                       class="btn btn-outline-danger btn-sm rounded-pill px-2 py-1 me-1"
@@ -748,5 +782,24 @@ onMounted(() => {
 }
 .leading-relaxed {
   line-height: 1.5;
+}
+.fs-10 {
+  font-size: 0.65rem;
+}
+.dish-link {
+  transition: color 0.15s ease;
+}
+.dish-link:hover {
+  color: #dc3545 !important;
+}
+.hover-scale {
+  transition: transform 0.18s ease;
+}
+.hover-scale:hover {
+  transform: scale(1.08);
+}
+.hover-bg-danger:hover {
+  background-color: #dc3545 !important;
+  color: #ffffff !important;
 }
 </style>

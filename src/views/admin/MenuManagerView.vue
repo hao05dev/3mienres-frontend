@@ -231,7 +231,8 @@
       v-if="showCategoryModal"
       :categories="menuStore.categories"
       @close="showCategoryModal = false"
-      @refresh="menuStore.fetchCategories()"
+      @add="handleAddCategory"
+      @delete="handleDeleteCategory"
     />
 
     <!-- Modal Xác Nhận Xóa Món Ăn -->
@@ -438,6 +439,26 @@ const handleAddDish = async (form) => {
     await loadData();
   } catch (err) {
     modalError.value = err.message;
+  }
+};
+
+const handleAddCategory = async (name) => {
+  try {
+    await api.post("/categories", { name });
+    toast.success(`Đã thêm danh mục '${name}' thành công!`);
+    await menuStore.fetchCategories();
+  } catch (err) {
+    toast.error(err.response?.data?.message || err.message || "Không thể tạo danh mục");
+  }
+};
+
+const handleDeleteCategory = async (cat) => {
+  try {
+    await api.delete(`/categories/${cat._id}`);
+    toast.success(`Đã xóa danh mục '${cat.name}'`);
+    await menuStore.fetchCategories();
+  } catch (err) {
+    toast.error(err.response?.data?.message || err.message || "Không thể xóa danh mục");
   }
 };
 
