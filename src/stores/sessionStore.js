@@ -34,6 +34,15 @@ export const useSessionStore = defineStore("session", {
         throw new Error(err.response?.data?.message || "Check-in thất bại!");
       }
     },
+    async checkInAndMergeReservation(payload) {
+      try {
+        const res = await api.post("/dining-sessions/check-in-merge", payload);
+        await this.fetchActiveSessions();
+        return res.data;
+      } catch (err) {
+        throw new Error(err.response?.data?.message || "Check-in ghép bàn thất bại!");
+      }
+    },
     async createWalkInSession(dataOrName, customerPhone, guestsCount, tableIds, notes) {
       try {
         let payload;

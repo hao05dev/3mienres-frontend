@@ -84,6 +84,7 @@
       :loading="checkInLoading"
       @close="customCheckInReservation = null"
       @submit="handleCustomCheckInSubmit"
+      @submit-merge="handleCustomCheckInMergeSubmit"
     />
 
     <!-- 5. Modal Lịch Đặt Bàn Hôm Nay (Timeline) -->
@@ -319,6 +320,20 @@ const handleCustomCheckInSubmit = async ({ reservationId, actualGuestsCount, tab
     await fetchReservations();
   } catch (err) {
     toast.error("Lỗi Check-in: " + err.message);
+  } finally {
+    checkInLoading.value = false;
+  }
+};
+
+const handleCustomCheckInMergeSubmit = async (payload) => {
+  checkInLoading.value = true;
+  try {
+    const res = await sessionStore.checkInAndMergeReservation(payload);
+    toast.success(res.message || "Check-in ghép vào bàn người quen thành công!");
+    customCheckInReservation.value = null;
+    await fetchReservations();
+  } catch (err) {
+    toast.error("Lỗi ghép bàn: " + err.message);
   } finally {
     checkInLoading.value = false;
   }
