@@ -131,15 +131,22 @@
                 </span>
               </td>
               <td class="text-end">
-                <div class="btn-group btn-group-sm">
-                  <button @click="openUploadModal(dish)" class="btn btn-outline-primary btn-sm rounded-circle me-1" title="Tải ảnh món">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                <div class="d-flex justify-content-end gap-1.5 align-items-center">
+                  <button @click="openUploadModal(dish)" class="btn btn-outline-primary btn-sm rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" title="Tải ảnh món">
+                    <i class="fa-solid fa-cloud-arrow-up fs-9"></i>
+                  </button>
+                  <button @click="openEditModal(dish)" class="btn btn-outline-secondary btn-sm rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" title="Sửa thông tin món">
+                    <i class="fa-solid fa-pen fs-9"></i>
                   </button>
                   <button
                     @click="toggleAvailability(dish)"
-                    :class="['btn btn-sm rounded-pill px-2.5 py-0.5 fw-semibold', dish.availability !== false ? 'btn-outline-danger' : 'btn-outline-success']"
+                    :class="['btn btn-sm rounded-pill px-2.5 py-0.5 fw-semibold fs-9', dish.availability !== false ? 'btn-outline-danger' : 'btn-outline-success']"
+                    :title="dish.availability !== false ? 'Tạm ngưng phục vụ (Hết hàng)' : 'Mở bán lại (Còn hàng)'"
                   >
                     {{ dish.availability !== false ? 'Tắt' : 'Bật' }}
+                  </button>
+                  <button @click="openDeleteConfirm(dish)" class="btn btn-outline-danger btn-sm rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" title="Xóa món ăn">
+                    <i class="fa-solid fa-trash fs-9"></i>
                   </button>
                 </div>
               </td>
@@ -204,6 +211,15 @@
       @submit="handleAddDish"
     />
 
+    <EditDishModal
+      v-if="showEditModal && selectedDish"
+      :dish="selectedDish"
+      :categories="menuStore.categories"
+      :error="modalError"
+      @close="showEditModal = false"
+      @submit="handleEditDish"
+    />
+
     <UploadDishImageModal
       v-if="showUploadModal"
       :dish="selectedDish"
@@ -217,6 +233,20 @@
       @close="showCategoryModal = false"
       @refresh="menuStore.fetchCategories()"
     />
+
+    <!-- Modal Xác Nhận Xóa Món Ăn -->
+    <ConfirmModal
+      :show="showDeleteConfirm"
+      title="Xác Nhận Xóa Món Ăn"
+      :message="`Bạn có chắc chắn muốn xóa món '${deleteTargetDish?.name}'? Lưu ý: Món ăn đã từng có trong đơn hàng hoặc đặt bàn sẽ không thể xóa để bảo đảm lịch sử kế toán.`"
+      confirm-text="Xóa Vĩnh Viễn"
+      cancel-text="Giữ Lại"
+      confirm-variant="danger"
+      icon="fa-solid fa-trash-can"
+      :loading="deleteLoading"
+      @cancel="showDeleteConfirm = false"
+      @confirm="executeDeleteDish"
+    />
   </div>
 </template>
 
@@ -229,8 +259,10 @@ import { exportToCSV } from "../../utils/excelExporter";
 import { getImageUrl } from "../../utils/imageHelper";
 
 import AddDishModal from "../../components/admin/menu/AddDishModal.vue";
+import EditDishModal from "../../components/admin/menu/EditDishModal.vue";
 import UploadDishImageModal from "../../components/admin/menu/UploadDishImageModal.vue";
 import CategoryModal from "../../components/admin/menu/CategoryModal.vue";
+import ConfirmModal from "../../components/common/ConfirmModal.vue";
 
 const menuStore = useMenuStore();
 const dishList = ref([]);
@@ -241,8 +273,12 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 
 const showAddModal = ref(false);
+const showEditModal = ref(false);
 const showUploadModal = ref(false);
 const showCategoryModal = ref(false);
+const showDeleteConfirm = ref(false);
+const deleteTargetDish = ref(null);
+const deleteLoading = ref(false);
 const selectedDish = ref(null);
 const modalError = ref("");
 
@@ -342,6 +378,45 @@ const exportMenuExcel = () => {
 const openUploadModal = (dish) => {
   selectedDish.value = dish;
   showUploadModal.value = true;
+};
+
+const openEditModal = (dish) => {
+  selectedDish.value = dish;
+  modalError.value = "";
+  showEditModal.value = true;
+};
+
+const handleEditDish = async (form) => {
+  modalError.value = "";
+  try {
+    await menuStore.updateDish(selectedDish.value._id, form);
+    toast.success("Cập nhật thông tin món ăn thành công!");
+    showEditModal.value = false;
+    await loadData();
+  } catch (err) {
+    modalError.value = err.message;
+  }
+};
+
+const openDeleteConfirm = (dish) => {
+  deleteTargetDish.value = dish;
+  showDeleteConfirm.value = true;
+};
+
+const executeDeleteDish = async () => {
+  if (!deleteTargetDish.value) return;
+  deleteLoading.value = true;
+  try {
+    const res = await menuStore.deleteDish(deleteTargetDish.value._id);
+    toast.success(res.message || `Đã xóa món ${deleteTargetDish.value.name} thành công!`);
+    showDeleteConfirm.value = false;
+    deleteTargetDish.value = null;
+    await loadData();
+  } catch (err) {
+    toast.error("Không thể xóa: " + err.message);
+  } finally {
+    deleteLoading.value = false;
+  }
 };
 
 const toggleAvailability = async (dish) => {

@@ -50,5 +50,45 @@ export const useMenuStore = defineStore("menu", {
         this.loading = false;
       }
     },
+    async toggleAvailability(dishId) {
+      try {
+        const res = await api.patch(`/dishes/${dishId}/toggle-availability`);
+        const updatedDish = res.data.data.dish;
+        const idx = this.dishes.findIndex((d) => d._id === dishId);
+        if (idx !== -1) {
+          this.dishes[idx].availability = updatedDish.availability;
+        }
+        return res.data;
+      } catch (err) {
+        throw new Error(err.response?.data?.message || "Lỗi cập nhật trạng thái món ăn");
+      }
+    },
+    async createDish(payload) {
+      try {
+        const res = await api.post("/dishes", payload);
+        await this.fetchDishes();
+        return res.data;
+      } catch (err) {
+        throw new Error(err.response?.data?.message || "Lỗi tạo món ăn mới");
+      }
+    },
+    async updateDish(dishId, payload) {
+      try {
+        const res = await api.patch(`/dishes/${dishId}`, payload);
+        await this.fetchDishes();
+        return res.data;
+      } catch (err) {
+        throw new Error(err.response?.data?.message || "Lỗi cập nhật món ăn");
+      }
+    },
+    async deleteDish(dishId) {
+      try {
+        const res = await api.delete(`/dishes/${dishId}`);
+        this.dishes = this.dishes.filter((d) => d._id !== dishId);
+        return res.data;
+      } catch (err) {
+        throw new Error(err.response?.data?.message || "Lỗi xóa món ăn");
+      }
+    },
   },
 });
