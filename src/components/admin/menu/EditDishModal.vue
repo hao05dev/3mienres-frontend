@@ -52,7 +52,7 @@
                 <div class="form-check form-switch">
                   <input v-model="form.availability" class="form-check-input" type="checkbox" id="availSwitch" />
                   <label class="form-check-label fw-semibold fs-8" for="availSwitch">
-                    {{ form.availability ? '✅ Còn hàng' : '❌ Hết hàng' }}
+                    {{ form.availability ? 'Còn hàng' : 'Hết hàng' }}
                   </label>
                 </div>
                 <div class="form-check form-switch">

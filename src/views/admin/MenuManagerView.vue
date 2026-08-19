@@ -127,7 +127,7 @@
               </td>
               <td class="text-center">
                 <span :class="['badge px-2.5 py-1 rounded-pill fs-9 fw-bold', dish.availability !== false ? 'bg-success bg-opacity-15 text-success' : 'bg-danger text-white']">
-                  {{ dish.availability !== false ? '✅ CÒN HÀNG' : '❌ HẾT HÀNG' }}
+                  {{ dish.availability !== false ? 'CÒN HÀNG' : 'HẾT HÀNG' }}
                 </span>
               </td>
               <td class="text-end">

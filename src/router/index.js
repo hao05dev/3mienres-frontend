@@ -43,7 +43,7 @@ const routes = [
     children: [
       { path: "", name: "home", component: HomeView },
       { path: "thuc-don", name: "menu", component: MenuView },
-      { path: "mon-an/:slug", name: "dish-detail", component: DishDetailView },
+      { path: "mon-an/:slug", name: "dish-detail", component: DishDetailView, alias: ["mon an/:slug", "mon-an/:slug(.*)"] },
       { path: "dat-ban", name: "reservation", component: ReservationView },
       { path: "tra-cuu", name: "track-order", component: TrackReservationView },
       { path: "hang-thanh-vien", name: "loyalty", component: RankLoyaltyView },
