@@ -139,21 +139,37 @@
           </div>
 
           <nav v-if="totalPages > 1" aria-label="Phân trang món ăn">
-            <ul class="pagination pagination-sm mb-0 gap-1">
-              <li :class="['page-item', currentPage === 1 ? 'disabled' : '']">
-                <button @click="currentPage--" class="page-item-btn rounded-circle">
+            <ul class="pagination pagination-sm mb-0 gap-1 align-items-center">
+              <!-- Nút Trang Trước -->
+              <li :class="['page-item', currentPage <= 1 ? 'disabled' : '']">
+                <button
+                  @click="prevPage"
+                  :disabled="currentPage <= 1"
+                  class="page-item-btn rounded-circle"
+                  title="Trang trước"
+                >
                   <i class="fa-solid fa-chevron-left"></i>
                 </button>
               </li>
 
+              <!-- Danh sách số trang -->
               <li v-for="page in totalPages" :key="page" :class="['page-item', currentPage === page ? 'active' : '']">
-                <button @click="currentPage = page" :class="['page-item-btn rounded-circle fw-bold', currentPage === page ? 'btn-danger text-white' : '']">
+                <button
+                  @click="goToPage(page)"
+                  :class="['page-item-btn rounded-circle fw-bold', currentPage === page ? 'btn-danger text-white border-danger shadow-2xs' : '']"
+                >
                   {{ page }}
                 </button>
               </li>
 
-              <li :class="['page-item', currentPage === totalPages ? 'disabled' : '']">
-                <button @click="currentPage++" class="page-item-btn rounded-circle">
+              <!-- Nút Trang Sau (Bị khóa khi đến trang cuối) -->
+              <li :class="['page-item', currentPage >= totalPages ? 'disabled' : '']">
+                <button
+                  @click="nextPage"
+                  :disabled="currentPage >= totalPages"
+                  class="page-item-btn rounded-circle"
+                  title="Trang tiếp theo"
+                >
                   <i class="fa-solid fa-chevron-right"></i>
                 </button>
               </li>
@@ -162,7 +178,7 @@
         </div>
       </div>
 
-      <!-- Empty State -->
+      <!-- Empty State (Chỉ hiện khi bộ lọc không khớp món nào) -->
       <div v-else class="text-center py-5 glass-card rounded-5 bg-white shadow-sm">
         <i class="fa-solid fa-utensils display-2 text-muted mb-3 d-block"></i>
         <h4 class="fw-bold text-dark">{{ langStore.isEnglish ? 'No Dishes Found' : 'Không Tìm Thấy Món Ăn Nào' }}</h4>
@@ -176,7 +192,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useMenuStore } from "../../stores/menuStore";
 import { useLangStore } from "../../stores/langStore";
 import { useRoute } from "vue-router";
@@ -233,12 +249,44 @@ const filteredDishes = computed(() => {
   });
 });
 
-const totalPages = computed(() => Math.ceil(filteredDishes.value.length / itemsPerPage) || 1);
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredDishes.value.length / itemsPerPage)));
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage);
 const endIndex = computed(() => startIndex.value + itemsPerPage);
 
 const paginatedDishes = computed(() => {
   return filteredDishes.value.slice(startIndex.value, endIndex.value);
+});
+
+// Điều hướng trang an toàn có chốt chặn biên
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+    window.scrollTo({ top: 220, behavior: "smooth" });
+  }
+};
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+    window.scrollTo({ top: 220, behavior: "smooth" });
+  }
+};
+
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+    window.scrollTo({ top: 220, behavior: "smooth" });
+  }
+};
+
+// Tự động kiểm tra ép trang về phạm vi hợp lệ khi bộ lọc thay đổi
+watch(totalPages, (newTotal) => {
+  if (currentPage.value > newTotal) {
+    currentPage.value = newTotal;
+  }
+  if (currentPage.value < 1) {
+    currentPage.value = 1;
+  }
 });
 
 onMounted(() => {
@@ -259,11 +307,21 @@ onMounted(() => {
   justify-content: center;
   font-size: 0.85rem;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
-.page-item-btn:hover {
+.page-item-btn:hover:not(:disabled) {
   background: #f8f9fa;
   border-color: #dc3545;
   color: #dc3545;
+}
+.page-item-btn:disabled,
+.page-item.disabled .page-item-btn {
+  opacity: 0.35;
+  cursor: not-allowed !important;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+  pointer-events: none;
 }
 .scrollbar-none::-webkit-scrollbar {
   display: none;
