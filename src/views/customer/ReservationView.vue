@@ -248,7 +248,7 @@ const goToStep = (step) => {
   }
 };
 
-const handleSubmitReservation = async () => {
+const handleSubmitReservation = async (voucherData) => {
   stepError.value = "";
   try {
     const formattedDishes = [];
@@ -264,6 +264,7 @@ const handleSubmitReservation = async () => {
       startAt: new Date(form.startAt).toISOString(),
       tableIds: form.tableIds,
       preOrderDishes: formattedDishes,
+      voucherCode: voucherData?.voucherCode || undefined,
       notes: form.notes ? form.notes.trim() : undefined,
     };
 
