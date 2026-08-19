@@ -122,7 +122,10 @@
 
               <!-- Action buttons -->
               <div class="d-flex gap-3 flex-wrap">
-                <router-link to="/dat-ban" class="btn btn-primary-crab px-4 py-2.5 fw-bold flex-grow-1 shadow-sm">
+                <router-link
+                  :to="{ path: '/dat-ban', query: { preDishId: dish._id, qty: 1 } }"
+                  class="btn btn-primary-crab px-4 py-2.5 fw-bold flex-grow-1 shadow-sm"
+                >
                   <i class="fa-solid fa-calendar-check me-2"></i> {{ langStore.isEnglish ? 'Pre-order & Book Table' : 'Đặt Bàn & Gọi Món Này' }}
                 </router-link>
               </div>

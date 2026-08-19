@@ -142,7 +142,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, watch } from "vue";
+import { useRoute } from "vue-router";
 import { useAuthStore } from "../../stores/authStore";
 import { useTableStore } from "../../stores/tableStore";
 import { useMenuStore } from "../../stores/menuStore";
@@ -296,8 +297,19 @@ const resetForm = () => {
   initDefaultTime();
 };
 
+const route = useRoute();
+
+const checkPreSelectedDish = () => {
+  const preDishId = route.query.preDishId;
+  if (preDishId) {
+    const qty = parseInt(route.query.qty, 10) || 1;
+    form.preOrders[preDishId] = qty;
+  }
+};
+
 onMounted(async () => {
   initDefaultTime();
+  checkPreSelectedDish();
   if (authStore.user) {
     form.customerName = authStore.user.name || "";
     form.customerPhone = authStore.user.phone || "";
@@ -307,6 +319,13 @@ onMounted(async () => {
   tableStore.fetchAreas();
   menuStore.fetchDishes();
 });
+
+watch(
+  () => route.query.preDishId,
+  () => {
+    checkPreSelectedDish();
+  }
+);
 </script>
 
 <style scoped>
