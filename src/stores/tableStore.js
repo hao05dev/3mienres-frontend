@@ -90,6 +90,18 @@ export const useTableStore = defineStore("table", {
         throw new Error(err.response?.data?.message || "Không thể tạo liên kết ghép bàn!");
       }
     },
+    async updateConnection(connectionId, payload) {
+      try {
+        const res = await api.patch(`/table-connections/${connectionId}`, payload);
+        const idx = this.connections.findIndex((c) => c._id === connectionId);
+        if (idx !== -1) {
+          this.connections[idx] = res.data.data.connection;
+        }
+        return res.data;
+      } catch (err) {
+        throw new Error(err.response?.data?.message || "Không thể cập nhật liên kết ghép bàn!");
+      }
+    },
     async deleteConnection(connectionId) {
       try {
         const res = await api.delete(`/table-connections/${connectionId}`);

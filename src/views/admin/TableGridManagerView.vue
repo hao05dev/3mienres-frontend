@@ -107,10 +107,57 @@
               <td><span class="conn-badge">{{ conn.tableA?.tableNumber }} ({{ conn.tableA?.capacity }} chỗ)</span></td>
               <td class="text-center text-muted"><i class="fa-solid fa-link" style="font-size: 0.55rem"></i></td>
               <td><span class="conn-badge">{{ conn.tableB?.tableNumber }} ({{ conn.tableB?.capacity }} chỗ)</span></td>
-              <td class="text-muted" style="font-size: 0.65rem">{{ conn.note || 'Kề sát nhau' }}</td>
+              
+              <!-- Ghi chú có thể chỉnh sửa -->
+              <td style="font-size: 0.75rem">
+                <div v-if="editingConnId === conn._id" class="d-flex align-items-center gap-1.5" style="max-width: 380px;">
+                  <input
+                    v-model="editingConnNote"
+                    @keydown.enter="saveConnectionNote(conn)"
+                    @keydown.esc="cancelEditNote"
+                    type="text"
+                    class="form-control form-control-sm py-0.5 px-2.5 fs-8 rounded-pill border-danger"
+                    placeholder="Nhập ghi chú ghép bàn..."
+                    autofocus
+                  />
+                  <button
+                    @click="saveConnectionNote(conn)"
+                    :disabled="savingConnNote"
+                    class="btn btn-sm btn-success rounded-circle p-0 d-inline-flex align-items-center justify-content-center"
+                    style="width: 26px; height: 26px; flex-shrink: 0;"
+                    title="Lưu ghi chú (Enter)"
+                  >
+                    <span v-if="savingConnNote" class="spinner-border spinner-border-sm" style="width: 12px; height: 12px;"></span>
+                    <i v-else class="fa-solid fa-check fs-9"></i>
+                  </button>
+                  <button
+                    @click="cancelEditNote"
+                    class="btn btn-sm btn-light rounded-circle p-0 d-inline-flex align-items-center justify-content-center"
+                    style="width: 26px; height: 26px; flex-shrink: 0;"
+                    title="Hủy (Esc)"
+                  >
+                    <i class="fa-solid fa-xmark fs-9"></i>
+                  </button>
+                </div>
+
+                <div v-else class="d-flex align-items-center gap-2 group-note">
+                  <span :class="conn.note ? 'text-dark fw-medium' : 'text-muted fst-italic'">
+                    {{ conn.note || 'Chưa có ghi chú' }}
+                  </span>
+                  <button
+                    @click="startEditNote(conn)"
+                    class="btn btn-link btn-sm text-secondary p-0 hover-opacity-100"
+                    style="font-size: 0.72rem;"
+                    title="Sửa ghi chú cặp bàn này"
+                  >
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </button>
+                </div>
+              </td>
+
               <td class="text-end">
-                <button @click="handleDeleteConnection(conn)" class="btn btn-outline-danger rounded-pill px-2 py-0" style="font-size: 0.6rem" title="Gỡ liên kết">
-                  <i class="fa-solid fa-trash-can"></i>
+                <button @click="handleDeleteConnection(conn)" class="btn btn-outline-danger rounded-circle p-1 d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px;" title="Gỡ liên kết ghép bàn">
+                  <i class="fa-solid fa-trash-can fs-9"></i>
                 </button>
               </td>
             </tr>
@@ -327,6 +374,33 @@ const handleDeleteTable = (table) => {
 };
 
 // Connection
+const editingConnId = ref(null);
+const editingConnNote = ref("");
+const savingConnNote = ref(false);
+
+const startEditNote = (conn) => {
+  editingConnId.value = conn._id;
+  editingConnNote.value = conn.note || "";
+};
+
+const cancelEditNote = () => {
+  editingConnId.value = null;
+  editingConnNote.value = "";
+};
+
+const saveConnectionNote = async (conn) => {
+  savingConnNote.value = true;
+  try {
+    await tableStore.updateConnection(conn._id, { note: editingConnNote.value });
+    toast.success(`Đã cập nhật ghi chú cho cặp bàn ${conn.tableA?.tableNumber} ↔ ${conn.tableB?.tableNumber}`);
+    editingConnId.value = null;
+  } catch (err) {
+    toast.error(err.message || "Lỗi cập nhật ghi chú!");
+  } finally {
+    savingConnNote.value = false;
+  }
+};
+
 const handleCreateConnection = async (form) => {
   connModalError.value = "";
   try {
