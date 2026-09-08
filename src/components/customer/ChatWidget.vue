@@ -39,8 +39,8 @@
             </div>
             <div>
               <h6 class="mb-0 fw-bold d-flex align-items-center gap-1">
-                Trợ Lý AI 3 Miền Cua
-                <span class="badge bg-warning text-dark font-xs px-2 py-0.5 rounded-pill">RAG AI</span>
+                Trợ Lý AI 
+                <span class="badge bg-warning text-dark font-xs px-2 py-0.5 rounded-pill">3 Miền Cua</span>
               </h6>
               <p class="mb-0 font-xs opacity-75">Tư vấn món • Đặt bàn & Gọi món tức thì</p>
             </div>
@@ -556,8 +556,14 @@ const sendMessage = async () => {
     const res = await api.post("/chatbot/chat", payload);
     const data = res.data;
 
+    if (data.targetReservation) {
+      selectedActiveReservation.value = data.targetReservation;
+    }
+
     if (data.bookingData) {
       currentDraftBooking.value = data.bookingData;
+    } else {
+      currentDraftBooking.value = null;
     }
 
     messages.value.push({
