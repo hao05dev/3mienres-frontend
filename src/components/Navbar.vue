@@ -81,15 +81,25 @@
               <i class="fa-solid fa-circle-user fs-6 text-danger"></i>
               <span class="fw-semibold">{{ authStore.user?.name }}</span>
             </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 p-2 mt-2">
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 p-2 mt-2" style="min-width: 220px;">
               <li v-if="authStore.isStaff">
                 <router-link to="/admin" class="dropdown-item rounded-3 py-2 fw-medium text-danger">
                   <i class="fa-solid fa-chart-line me-2"></i> {{ langStore.isEnglish ? 'POS Dashboard' : 'Trang Quản Lý POS' }}
                 </router-link>
               </li>
               <li>
-                <router-link to="/ho-so" class="dropdown-item rounded-3 py-2 fw-medium">
-                  <i class="fa-solid fa-user-gear me-2 text-danger"></i> {{ langStore.isEnglish ? 'My Profile' : 'Hồ Sơ & Thông Tin' }}
+                <router-link to="/ho-so?tab=info" class="dropdown-item rounded-3 py-2 fw-medium">
+                  <i class="fa-solid fa-user-gear me-2 text-primary"></i> {{ langStore.isEnglish ? 'My Profile' : 'Hồ Sơ & Thông Tin' }}
+                </router-link>
+              </li>
+              <li>
+                <router-link to="/ho-so?tab=invoices" class="dropdown-item rounded-3 py-2 fw-medium">
+                  <i class="fa-solid fa-file-invoice-dollar me-2 text-success"></i> {{ langStore.isEnglish ? 'Invoice History' : 'Lịch Sử Hóa Đơn' }}
+                </router-link>
+              </li>
+              <li>
+                <router-link to="/ho-so?tab=favorites" class="dropdown-item rounded-3 py-2 fw-medium">
+                  <i class="fa-solid fa-heart me-2 text-danger"></i> {{ langStore.isEnglish ? 'Favorite Dishes' : 'Món Ăn Yêu Thích' }}
                 </router-link>
               </li>
               <li>

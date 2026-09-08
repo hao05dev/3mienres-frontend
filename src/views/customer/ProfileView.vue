@@ -85,7 +85,7 @@
                   <div :class="['tab-icon-box rounded-3 d-flex align-items-center justify-content-center', activeTab === tab.key ? 'bg-white text-danger' : 'bg-light text-muted']">
                     <i :class="tab.icon"></i>
                   </div>
-                  <span class="fw-semibold fs-7">{{ langStore.t('profile.' + tab.key) || tab.title }}</span>
+                  <span class="fw-semibold fs-7">{{ tab.title }}</span>
                 </div>
                 <span v-if="tab.badge" :class="['badge rounded-pill fs-9 px-2 py-0.5', activeTab === tab.key ? 'bg-white text-danger' : 'bg-light text-muted border']">
                   {{ tab.badge }}
@@ -536,8 +536,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { ref, reactive, computed, watch, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import api from "../../services/api";
 import { useAuthStore } from "../../stores/authStore";
 import { useReservationStore } from "../../stores/reservationStore";
@@ -547,13 +547,23 @@ import { getImageUrl } from "../../utils/imageHelper";
 import EInvoiceModal from "../../components/customer/EInvoiceModal.vue";
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
 const langStore = useLangStore();
 const reservationStore = useReservationStore();
 
-const activeTab = ref("info");
+const activeTab = ref(route.query.tab || "info");
 const saving = ref(false);
 const showPass = ref(false);
+
+watch(
+  () => route.query.tab,
+  (newTab) => {
+    if (newTab) {
+      activeTab.value = newTab;
+    }
+  }
+);
 
 const reservations = ref([]);
 const invoices = ref([]);
@@ -574,12 +584,42 @@ const profile = reactive({
 const passwordForm = reactive({ currentPassword: "", newPassword: "" });
 
 const tabs = computed(() => [
-  { key: "info", title: "Thông Tin", icon: "fa-solid fa-id-card", badge: null },
-  { key: "invoices", title: "Lịch Sử Hóa Đơn", icon: "fa-solid fa-file-invoice-dollar", badge: invoices.value.length ? `${invoices.value.length}` : null },
-  { key: "favorites", title: "Món Yêu Thích", icon: "fa-solid fa-heart", badge: favoriteDishes.value.length ? `${favoriteDishes.value.length}` : null },
-  { key: "history", title: "Lịch Sử Đặt Bàn", icon: "fa-solid fa-clock-rotate-left", badge: reservations.value.length ? `${reservations.value.length}` : null },
-  { key: "address", title: "Sổ Địa Chỉ", icon: "fa-solid fa-location-dot", badge: profile.addresses.length ? `${profile.addresses.length}` : null },
-  { key: "password", title: "Đổi Mật Khẩu", icon: "fa-solid fa-shield-halved", badge: null },
+  {
+    key: "info",
+    title: langStore.isEnglish ? "Personal Information" : "Thông Tin Cá Nhân",
+    icon: "fa-solid fa-id-card",
+    badge: null,
+  },
+  {
+    key: "invoices",
+    title: langStore.isEnglish ? "Dining Invoices" : "Lịch Sử Hóa Đơn",
+    icon: "fa-solid fa-file-invoice-dollar",
+    badge: invoices.value.length ? `${invoices.value.length}` : null,
+  },
+  {
+    key: "favorites",
+    title: langStore.isEnglish ? "Favorite Dishes" : "Món Ăn Yêu Thích",
+    icon: "fa-solid fa-heart",
+    badge: favoriteDishes.value.length ? `${favoriteDishes.value.length}` : null,
+  },
+  {
+    key: "history",
+    title: langStore.isEnglish ? "Reservation History" : "Lịch Sử Đặt Bàn",
+    icon: "fa-solid fa-clock-rotate-left",
+    badge: reservations.value.length ? `${reservations.value.length}` : null,
+  },
+  {
+    key: "address",
+    title: langStore.isEnglish ? "Address Book" : "Sổ Địa Chỉ",
+    icon: "fa-solid fa-location-dot",
+    badge: profile.addresses.length ? `${profile.addresses.length}` : null,
+  },
+  {
+    key: "password",
+    title: langStore.isEnglish ? "Security & Password" : "Đổi Mật Khẩu",
+    icon: "fa-solid fa-shield-halved",
+    badge: null,
+  },
 ]);
 
 const statusClass = (s) => ({
