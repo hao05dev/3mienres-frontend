@@ -55,27 +55,78 @@
           </div>
         </div>
 
-        <!-- Active Reservation Auto-Detected Banner (Không cần nhớ mã RES-XXXXXX) -->
-        <div v-if="activeReservations.length > 0" class="active-res-banner px-3 py-2 bg-warning-subtle border-bottom d-flex justify-content-between align-items-center">
-          <div class="d-flex align-items-center gap-2 overflow-hidden">
-            <span class="fs-6">📅</span>
-            <div class="overflow-hidden">
-              <div class="font-xs fw-bold text-dark text-truncate">
-                Bàn đã đặt: {{ formatTableNames(activeReservations[0]) }} ({{ formatDateTime(activeReservations[0].startAt) }})
-              </div>
-              <div class="font-xs text-secondary text-truncate">
-                Mã: <strong>{{ activeReservations[0].reservationCode }}</strong> • {{ activeReservations[0].guestsCount }} khách
+        <!-- Active Reservation Auto-Detected Banner with Dropdown Support -->
+        <div v-if="activeReservations.length > 0" class="active-res-banner px-3 py-2 bg-warning-subtle border-bottom position-relative">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2 overflow-hidden flex-grow-1 cursor-pointer" @click="toggleResDropdown">
+              <span class="fs-6">📅</span>
+              <div class="overflow-hidden">
+                <div class="font-xs fw-bold text-dark text-truncate d-flex align-items-center gap-1">
+                  <span>{{ formatTableNames(currentActiveRes) }}</span>
+                  <span v-if="activeReservations.length > 1" class="badge bg-warning text-dark font-2xs rounded-pill">
+                    {{ activeReservations.length }} đơn ▾
+                  </span>
+                </div>
+                <div class="font-xs text-secondary text-truncate">
+                  Mã: <strong class="text-dark">{{ currentActiveRes.reservationCode }}</strong> • {{ formatDateTime(currentActiveRes.startAt) }}
+                </div>
               </div>
             </div>
+            <div class="d-flex align-items-center gap-1 ms-2">
+              <button
+                class="btn btn-xs btn-primary-orange text-nowrap rounded-pill shadow-xs"
+                :class="{ 'btn-success': selectedActiveReservation?._id === currentActiveRes._id }"
+                @click="selectActiveReservation(currentActiveRes)"
+              >
+                <i class="fa-solid fa-utensils me-1"></i>
+                {{ selectedActiveReservation?._id === currentActiveRes._id ? 'Đang chọn' : 'Gọi món' }}
+              </button>
+              <button
+                v-if="activeReservations.length > 1"
+                class="btn btn-xs btn-outline-secondary rounded-circle"
+                title="Chọn đơn đặt bàn khác"
+                @click="toggleResDropdown"
+              >
+                <i class="fa-solid fa-chevron-down font-xs"></i>
+              </button>
+            </div>
           </div>
-          <button
-            class="btn btn-xs btn-primary-orange text-nowrap rounded-pill shadow-xs"
-            :class="{ 'btn-success': selectedActiveReservation?._id === activeReservations[0]._id }"
-            @click="selectActiveReservation(activeReservations[0])"
-          >
-            <i class="fa-solid fa-utensils me-1"></i>
-            {{ selectedActiveReservation?._id === activeReservations[0]._id ? 'Đang chọn' : 'Gọi món' }}
-          </button>
+
+          <!-- Dropdown List of Multiple Reservations -->
+          <transition name="pop-fade">
+            <div v-if="showResDropdown" class="res-dropdown-menu shadow-lg border rounded-3 p-2 position-absolute bg-white">
+              <div class="font-xs fw-bold text-muted px-1 py-1 mb-1 border-bottom d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-list-check me-1"></i> CHỌN ĐƠN ĐÃ ĐẶT ({{ activeReservations.length }})</span>
+                <button type="button" class="btn-close btn-close-xs" @click="showResDropdown = false"></button>
+              </div>
+              <div class="res-items-scroll" style="max-height: 190px; overflow-y: auto;">
+                <div
+                  v-for="res in activeReservations"
+                  :key="res._id"
+                  class="res-dropdown-item p-2 rounded-2 mb-1.5 cursor-pointer border transition-all"
+                  :class="selectedActiveReservation?._id === res._id ? 'border-primary bg-primary-subtle' : 'bg-light border-light-subtle hover-bg-warning'"
+                  @click="onSelectFromDropdown(res)"
+                >
+                  <div class="d-flex justify-content-between align-items-center mb-0.5">
+                    <strong class="font-xs text-dark">{{ formatTableNames(res) }}</strong>
+                    <span class="badge bg-dark font-xs">{{ res.reservationCode }}</span>
+                  </div>
+                  <div class="font-xs text-secondary d-flex justify-content-between align-items-center">
+                    <span><i class="fa-solid fa-clock me-1"></i>{{ formatDateTime(res.startAt) }}</span>
+                    <span><i class="fa-solid fa-user-group me-1"></i>{{ res.guestsCount }} khách</span>
+                  </div>
+                  <div v-if="res.preOrderDishes && res.preOrderDishes.length > 0" class="font-2xs text-success mt-0.5">
+                    <i class="fa-solid fa-bowl-food me-1"></i> Đã đặt trước: {{ res.preOrderDishes.length }} món
+                  </div>
+                </div>
+              </div>
+              <div class="border-top pt-1 mt-1 text-center">
+                <button class="btn btn-xs btn-link text-decoration-none text-muted font-xs py-0.5" @click="clearActiveReservationSelection">
+                  <i class="fa-solid fa-plus-circle me-1"></i> Bỏ chọn đơn (Để đặt bàn mới)
+                </button>
+              </div>
+            </div>
+          </transition>
         </div>
 
         <!-- Chat Body / Messages -->
@@ -369,6 +420,31 @@ const currentDraftBooking = ref(null);
 const activeReservations = ref([]);
 const selectedActiveReservation = ref(null);
 const allAvailableDishes = ref([]);
+const showResDropdown = ref(false);
+
+const currentActiveRes = computed(() => {
+  return selectedActiveReservation.value || activeReservations.value[0] || {};
+});
+
+const toggleResDropdown = () => {
+  showResDropdown.value = !showResDropdown.value;
+};
+
+const onSelectFromDropdown = (res) => {
+  selectActiveReservation(res);
+  showResDropdown.value = false;
+};
+
+const clearActiveReservationSelection = () => {
+  selectedActiveReservation.value = null;
+  showResDropdown.value = false;
+  messages.value.push({
+    sender: "assistant",
+    text: "Dạ em đã bỏ chọn đơn đặt bàn trước đó. Anh/Chị muốn **đặt một bàn mới** hay cần em tư vấn món gì ạ? 🦀",
+    time: formatTimeNow(),
+  });
+  scrollToBottom();
+};
 
 const quickCategories = [
   { key: "ALL", label: "Tất cả" },
@@ -945,6 +1021,31 @@ onMounted(() => {
 .btn-send-chat:disabled {
   background: #cbd5e1;
   cursor: not-allowed;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.font-2xs {
+  font-size: 0.68rem;
+}
+
+.res-dropdown-menu {
+  top: 100%;
+  left: 12px;
+  right: 12px;
+  z-index: 1070;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.res-dropdown-item {
+  transition: all 0.2s ease;
+}
+
+.res-dropdown-item:hover {
+  background-color: #fef3c7 !important;
+  border-color: #f59e0b !important;
 }
 
 .quick-chip-btn {
