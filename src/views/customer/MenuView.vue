@@ -103,6 +103,16 @@
                   :alt="dish.name"
                   class="w-100 h-100 object-fit-cover"
                 />
+                <!-- Nút Yêu Thích (Favorite Button) -->
+                <button
+                  type="button"
+                  @click.stop.prevent="handleToggleFav(dish)"
+                  class="btn btn-light btn-sm rounded-circle position-absolute top-0 start-0 m-3 shadow-sm p-0 d-flex align-items-center justify-content-center fav-btn"
+                  style="width: 32px; height: 32px; z-index: 2;"
+                  :title="authStore.isFavorite(dish._id) ? 'Bỏ yêu thích' : 'Yêu thích món này'"
+                >
+                  <i :class="[authStore.isFavorite(dish._id) ? 'fa-solid fa-heart text-danger' : 'fa-regular fa-heart text-secondary']"></i>
+                </button>
                 <span
                   :class="[
                     'badge position-absolute top-0 end-0 m-3 px-2.5 py-1.5 rounded-pill fs-8 shadow-sm',
@@ -195,19 +205,37 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { useMenuStore } from "../../stores/menuStore";
 import { useLangStore } from "../../stores/langStore";
-import { useRoute } from "vue-router";
+import { useAuthStore } from "../../stores/authStore";
+import { useRoute, useRouter } from "vue-router";
 import { getImageUrl } from "../../utils/imageHelper";
+import { toast } from "../../composables/useToast";
 import DishSkeletonCard from "../../components/common/DishSkeletonCard.vue";
 
 const menuStore = useMenuStore();
 const langStore = useLangStore();
+const authStore = useAuthStore();
 const route = useRoute();
+const router = useRouter();
 
 const searchQuery = ref("");
 const selectedRegion = ref(route.query.region || "");
 const selectedCategory = ref("");
 const currentPage = ref(1);
 const itemsPerPage = 12;
+
+const handleToggleFav = async (dish) => {
+  if (!authStore.isAuthenticated) {
+    toast.info("Vui lòng đăng nhập để lưu món ăn yêu thích!");
+    router.push("/dang-nhap");
+    return;
+  }
+  try {
+    const res = await authStore.toggleFavorite(dish._id);
+    toast.success(res.message);
+  } catch (err) {
+    toast.error(err.message);
+  }
+};
 
 const handleFilterChange = () => {
   currentPage.value = 1;

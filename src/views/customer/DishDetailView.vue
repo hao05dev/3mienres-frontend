@@ -121,13 +121,25 @@
               </div>
 
               <!-- Action buttons -->
-              <div class="d-flex gap-3 flex-wrap">
+              <div class="d-flex gap-2.5 flex-wrap">
                 <router-link
                   :to="{ path: '/dat-ban', query: { preDishId: dish._id, qty: 1 } }"
                   class="btn btn-primary-crab px-4 py-2.5 fw-bold flex-grow-1 shadow-sm"
                 >
                   <i class="fa-solid fa-calendar-check me-2"></i> {{ langStore.isEnglish ? 'Pre-order & Book Table' : 'Đặt Bàn & Gọi Món Này' }}
                 </router-link>
+                <button
+                  type="button"
+                  @click="handleToggleFav"
+                  :class="[
+                    'btn rounded-pill px-4 py-2.5 fw-bold border transition-all d-flex align-items-center justify-content-center',
+                    authStore.isFavorite(dish._id) ? 'btn-danger shadow-sm' : 'btn-outline-secondary bg-white'
+                  ]"
+                  :title="authStore.isFavorite(dish._id) ? 'Bỏ thích món này' : 'Lưu món ăn yêu thích'"
+                >
+                  <i :class="[authStore.isFavorite(dish._id) ? 'fa-solid fa-heart text-white me-1.5' : 'fa-regular fa-heart text-danger me-1.5']"></i>
+                  <span>{{ authStore.isFavorite(dish._id) ? (langStore.isEnglish ? 'Saved' : 'Đã Thích') : (langStore.isEnglish ? 'Favorite' : 'Yêu Thích') }}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -186,20 +198,37 @@
 
 <script setup>
 import { ref, watch, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import api from "../../services/api";
 import { useAuthStore } from "../../stores/authStore";
 import { useLangStore } from "../../stores/langStore";
+import { toast } from "../../composables/useToast";
 import { getImageUrl } from "../../utils/imageHelper";
 import DishReviewSection from "../../components/customer/DishReviewSection.vue";
 
 const route = useRoute();
+const router = useRouter();
 const authStore = useAuthStore();
 const langStore = useLangStore();
 
 const dish = ref(null);
 const loading = ref(false);
 const relatedDishes = ref([]);
+
+const handleToggleFav = async () => {
+  if (!dish.value) return;
+  if (!authStore.isAuthenticated) {
+    toast.info("Vui lòng đăng nhập để lưu món ăn yêu thích!");
+    router.push("/dang-nhap");
+    return;
+  }
+  try {
+    const res = await authStore.toggleFavorite(dish.value._id);
+    toast.success(res.message);
+  } catch (err) {
+    toast.error(err.message);
+  }
+};
 
 const fetchDish = async () => {
   loading.value = true;

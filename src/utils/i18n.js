@@ -98,8 +98,10 @@ export const dictionary = {
       bookings: 'Lượt đặt bàn',
       info: 'Thông Tin',
       address: 'Địa Chỉ',
-      password: 'Đổi Mật Khẩu',
+      password: 'Mật Khẩu',
       history: 'Lịch Sử Đặt Bàn',
+      invoices: 'Lịch Sử Hóa Đơn',
+      favorites: 'Món Yêu Thích',
     },
     admin: {
       sidebar: {
@@ -251,6 +253,8 @@ export const dictionary = {
       address: 'Addresses',
       password: 'Change Password',
       history: 'Booking History',
+      invoices: 'Invoice History',
+      favorites: 'Favorite Dishes',
     },
     admin: {
       sidebar: {

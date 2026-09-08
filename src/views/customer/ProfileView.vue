@@ -85,7 +85,7 @@
                   <div :class="['tab-icon-box rounded-3 d-flex align-items-center justify-content-center', activeTab === tab.key ? 'bg-white text-danger' : 'bg-light text-muted']">
                     <i :class="tab.icon"></i>
                   </div>
-                  <span class="fw-semibold fs-7">{{ langStore.t('profile.' + tab.key) }}</span>
+                  <span class="fw-semibold fs-7">{{ langStore.t('profile.' + tab.key) || tab.title }}</span>
                 </div>
                 <span v-if="tab.badge" :class="['badge rounded-pill fs-9 px-2 py-0.5', activeTab === tab.key ? 'bg-white text-danger' : 'bg-light text-muted border']">
                   {{ tab.badge }}
@@ -166,7 +166,238 @@
             </div>
           </div>
 
-          <!-- ── TAB 2: SỔ ĐỊA CHỈ ── -->
+          <!-- ── TAB 2: LỊCH SỬ HÓA ĐƠN DÙNG BỮA (E-RECEIPT HISTORY) ── -->
+          <div v-else-if="activeTab === 'invoices'" class="glass-card p-4 rounded-4 bg-white border shadow-2xs">
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+              <div>
+                <h5 class="fw-bold brand-font text-dark mb-0">
+                  <i class="fa-solid fa-file-invoice-dollar text-danger me-2"></i>{{ langStore.isEnglish ? 'Dining & Invoice History' : 'Lịch Sử Hóa Đơn Dùng Bữa' }}
+                </h5>
+                <small class="text-muted fs-8">{{ langStore.isEnglish ? 'Track all completed dining bills and view/print e-receipts.' : 'Theo dõi toàn bộ các bữa ăn đã hoàn tất thanh toán và tải/in hóa đơn điện tử.' }}</small>
+              </div>
+              <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-1 fs-8 fw-bold">
+                {{ invoices.length }} {{ langStore.isEnglish ? 'invoices' : 'hóa đơn' }}
+              </span>
+            </div>
+
+            <div v-if="invoicesLoading" class="text-center py-5">
+              <div class="spinner-border text-danger spinner-border-sm me-2" role="status"></div>
+              <span class="text-muted small">Đang tải lịch sử hóa đơn...</span>
+            </div>
+
+            <div v-else-if="invoices.length === 0" class="text-center py-5 text-muted">
+              <i class="fa-solid fa-receipt display-6 text-secondary opacity-40 mb-2 d-block"></i>
+              <p class="small mb-3">{{ langStore.isEnglish ? 'No paid invoices found yet.' : 'Bạn chưa có hóa đơn dùng bữa nào.' }}</p>
+              <router-link to="/dat-ban" class="btn btn-danger btn-sm rounded-pill px-4 fw-bold">
+                <i class="fa-solid fa-utensils me-1"></i> {{ langStore.isEnglish ? 'Book Table Now' : 'Đặt Bàn Trải Nghiệm Ngay' }}
+              </router-link>
+            </div>
+
+            <div v-else class="d-flex flex-column gap-3">
+              <div
+                v-for="inv in invoices"
+                :key="inv._id"
+                class="p-3.5 rounded-4 border bg-white shadow-2xs hover-border-danger transition-all"
+              >
+                <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-2 pb-2 border-bottom">
+                  <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                      <strong class="brand-font text-danger fs-6">{{ inv.invoiceCode }}</strong>
+                      <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2.5 py-0.5 fs-9 fw-bold">
+                        <i class="fa-solid fa-circle-check me-1"></i>Đã thanh toán
+                      </span>
+                    </div>
+                    <small class="text-muted fs-8 d-block">
+                      <i class="fa-solid fa-calendar-check me-1 text-secondary"></i>
+                      {{ inv.paidAt ? new Date(inv.paidAt).toLocaleString('vi-VN') : new Date(inv.createdAt).toLocaleString('vi-VN') }}
+                      <span v-if="inv.diningSession?.tables?.length">
+                        · {{ inv.diningSession.tables.map(t => 'Bàn ' + (t.tableNumber || t)).join(', ') }}
+                      </span>
+                    </small>
+                  </div>
+
+                  <div class="text-end">
+                    <span class="text-muted fs-9 d-block">Thực trả</span>
+                    <strong class="text-dark brand-font fs-6">{{ (inv.finalAmount || 0).toLocaleString('vi-VN') }}đ</strong>
+                  </div>
+                </div>
+
+                <!-- Invoice Summary Row -->
+                <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                  <div class="d-flex align-items-center gap-2 small text-muted">
+                    <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 fs-9">
+                      {{ paymentMethodLabel(inv.paymentMethod) }}
+                    </span>
+                    <span v-if="inv.discountAmount > 0" class="text-success fs-9 fw-semibold">
+                      <i class="fa-solid fa-tag me-0.5"></i>-{{ inv.discountAmount.toLocaleString('vi-VN') }}đ
+                    </span>
+                    <span v-if="inv.depositDeducted > 0" class="text-primary fs-9 fw-semibold">
+                      <i class="fa-solid fa-money-bill-transfer me-0.5"></i>Đã trừ cọc {{ inv.depositDeducted.toLocaleString('vi-VN') }}đ
+                    </span>
+                  </div>
+
+                  <div class="d-flex align-items-center gap-2">
+                    <button
+                      @click="viewInvoice(inv)"
+                      class="btn btn-outline-danger btn-sm rounded-pill px-3 fs-8 fw-bold"
+                    >
+                      <i class="fa-solid fa-receipt me-1"></i> Xem & In Hóa Đơn
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── TAB 3: MÓN ĂN YÊU THÍCH (FAVORITE DISHES) ── -->
+          <div v-else-if="activeTab === 'favorites'" class="glass-card p-4 rounded-4 bg-white border shadow-2xs">
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+              <div>
+                <h5 class="fw-bold brand-font text-dark mb-0">
+                  <i class="fa-solid fa-heart text-danger me-2"></i>{{ langStore.isEnglish ? 'My Favorite Dishes' : 'Danh Sách Món Ăn Yêu Thích' }}
+                </h5>
+                <small class="text-muted fs-8">{{ langStore.isEnglish ? 'Your saved seafood specialties for quick re-ordering.' : 'Các món đặc sản bạn đã bấm yêu thích để đặt bàn thưởng thức nhanh.' }}</small>
+              </div>
+              <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-1 fs-8 fw-bold">
+                {{ favoriteDishes.length }} {{ langStore.isEnglish ? 'dishes' : 'món' }}
+              </span>
+            </div>
+
+            <div v-if="favoritesLoading" class="text-center py-5">
+              <div class="spinner-border text-danger spinner-border-sm me-2" role="status"></div>
+              <span class="text-muted small">Đang tải danh sách món yêu thích...</span>
+            </div>
+
+            <div v-else-if="favoriteDishes.length === 0" class="text-center py-5 text-muted">
+              <i class="fa-solid fa-heart-crack display-6 text-secondary opacity-40 mb-2 d-block"></i>
+              <p class="small mb-3">{{ langStore.isEnglish ? 'You have no favorite dishes yet.' : 'Bạn chưa lưu món ăn yêu thích nào.' }}</p>
+              <router-link to="/thuc-don" class="btn btn-danger btn-sm rounded-pill px-4 fw-bold">
+                <i class="fa-solid fa-utensils me-1"></i> {{ langStore.isEnglish ? 'Explore Menu' : 'Khám Phá Thực Đơn Ngay' }}
+              </router-link>
+            </div>
+
+            <div v-else class="row g-3">
+              <div v-for="dish in favoriteDishes" :key="dish._id" class="col-md-6">
+                <div class="card border rounded-4 overflow-hidden h-100 shadow-2xs hover-lift transition-all bg-white">
+                  <div class="position-relative" style="height: 140px;">
+                    <img
+                      :src="getImageUrl(dish.image)"
+                      :alt="dish.name"
+                      class="w-100 h-100 object-fit-cover"
+                      onerror="this.src='/images/dishes/default-dish.jpg'"
+                    />
+                    <span
+                      :class="[
+                        'badge position-absolute top-0 end-0 m-2.5 px-2 py-1 rounded-pill fs-9 shadow-sm fw-bold',
+                        dish.region === 'Bắc' ? 'bg-primary' : dish.region === 'Trung' ? 'bg-warning text-dark' : 'bg-success'
+                      ]"
+                    >
+                      Miền {{ dish.region }}
+                    </span>
+                    <button
+                      type="button"
+                      @click="removeFavorite(dish._id)"
+                      class="btn btn-danger btn-sm rounded-circle position-absolute top-0 start-0 m-2.5 shadow-sm p-0 d-flex align-items-center justify-content-center"
+                      style="width: 28px; height: 28px;"
+                      title="Bỏ thích món này"
+                    >
+                      <i class="fa-solid fa-heart text-white fs-9"></i>
+                    </button>
+                  </div>
+
+                  <div class="p-3 d-flex flex-column justify-content-between flex-grow-1">
+                    <div>
+                      <h6 class="fw-bold text-dark mb-1 brand-font fs-7 text-truncate">{{ dish.name }}</h6>
+                      <span class="text-danger fw-bold fs-7">{{ (dish.price || 0).toLocaleString('vi-VN') }}đ</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center gap-2 pt-2.5 mt-2 border-top">
+                      <router-link
+                        :to="`/mon-an/${dish.slug || dish._id}`"
+                        class="btn btn-light btn-sm rounded-pill px-3 fs-9 fw-bold text-secondary border flex-grow-1"
+                      >
+                        <i class="fa-solid fa-eye me-1"></i> Chi Tiết
+                      </router-link>
+                      <router-link
+                        to="/dat-ban"
+                        class="btn btn-danger btn-sm rounded-pill px-3 fs-9 fw-bold flex-grow-1 shadow-2xs"
+                      >
+                        <i class="fa-solid fa-calendar-plus me-1"></i> Đặt Bàn
+                      </router-link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── TAB 4: LỊCH SỬ ĐẶT BÀN ── -->
+          <div v-else-if="activeTab === 'history'" class="glass-card p-4 rounded-4 bg-white border shadow-2xs">
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+              <div>
+                <h5 class="fw-bold brand-font text-dark mb-0">
+                  <i class="fa-solid fa-clock-rotate-left text-danger me-2"></i>{{ langStore.isEnglish ? 'Reservation History' : 'Lịch Sử Đặt Bàn Gần Đây' }}
+                </h5>
+                <small class="text-muted fs-8">{{ langStore.isEnglish ? 'All your table bookings and pre-orders at 3 Miền Cua.' : 'Toàn bộ các đơn đặt bàn, món ăn đặt trước của bạn.' }}</small>
+              </div>
+              <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-1 fs-8 fw-bold">
+                {{ reservations.length }} {{ langStore.isEnglish ? 'bookings' : 'lượt đặt' }}
+              </span>
+            </div>
+
+            <div v-if="reservations.length === 0" class="text-center py-5 text-muted">
+              <i class="fa-solid fa-calendar-xmark display-6 text-secondary opacity-40 mb-2 d-block"></i>
+              <p class="small mb-3">{{ langStore.isEnglish ? 'No reservations found.' : 'Bạn chưa có lượt đặt bàn nào.' }}</p>
+              <router-link to="/dat-ban" class="btn btn-danger rounded-pill px-4 fw-bold">
+                <i class="fa-solid fa-calendar-check me-1"></i> {{ langStore.isEnglish ? 'Book Table Now' : 'Đặt Bàn Ngay' }}
+              </router-link>
+            </div>
+
+            <div v-else class="d-flex flex-column gap-2.5">
+              <div
+                v-for="r in reservations"
+                :key="r._id"
+                class="p-3 rounded-4 border bg-white shadow-2xs d-flex align-items-center justify-content-between gap-3 flex-wrap hover-border-danger transition-all"
+              >
+                <div class="d-flex align-items-center gap-3">
+                  <div class="p-2.5 bg-danger bg-opacity-10 text-danger rounded-3 text-center" style="min-width: 48px;">
+                    <i class="fa-solid fa-calendar-day fs-5"></i>
+                  </div>
+                  <div>
+                    <div class="d-flex align-items-center gap-2 mb-0.5">
+                      <strong class="text-dark brand-font fs-7">{{ r.reservationCode }}</strong>
+                      <span :class="['badge rounded-pill px-2 py-0.5 fs-9 fw-semibold', statusClass(r.status)]">
+                        {{ statusLabel(r.status) }}
+                      </span>
+                    </div>
+                    <small class="text-muted fs-8 d-block">
+                      <i class="fa-solid fa-clock me-1 text-danger"></i>
+                      {{ new Date(r.startAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) }}
+                      · {{ r.guestsCount }} {{ langStore.isEnglish ? 'pax' : 'khách' }}
+                      <span v-if="r.tables?.length">· {{ r.tables.map(t => 'Bàn ' + (t.tableNumber || t)).join(', ') }}</span>
+                    </small>
+                  </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <router-link
+                    v-if="r.status === 'ARRIVED'"
+                    :to="`/goi-mon?session=${r.session?.sessionCode || r.sessionCode || r.reservationCode}`"
+                    class="btn btn-danger btn-sm rounded-pill px-3 fs-8 fw-bold shadow-2xs"
+                  >
+                    <i class="fa-solid fa-utensils me-1"></i>
+                    {{ langStore.isEnglish ? 'Order Dishes' : 'Gọi Món Tại Bàn' }}
+                  </router-link>
+                  <router-link :to="`/tra-cuu?code=${r.reservationCode}`" class="btn btn-outline-danger btn-sm rounded-pill px-3 fs-8 fw-semibold">
+                    <i class="fa-solid fa-receipt me-1"></i>
+                    {{ langStore.isEnglish ? 'View Receipt' : 'Chi Tiết & Hóa Đơn' }}
+                  </router-link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── TAB 5: SỔ ĐỊA CHỈ ── -->
           <div v-else-if="activeTab === 'address'" class="glass-card p-4 rounded-4 bg-white border shadow-2xs">
             <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
               <div>
@@ -234,7 +465,7 @@
             </div>
           </div>
 
-          <!-- ── TAB 3: ĐỔI MẬT KHẨU ── -->
+          <!-- ── TAB 6: ĐỔI MẬT KHẨU ── -->
           <div v-else-if="activeTab === 'password'" class="glass-card p-4 rounded-4 bg-white border shadow-2xs">
             <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
               <div>
@@ -291,75 +522,16 @@
               </button>
             </div>
           </div>
-
-          <!-- ── TAB 4: LỊCH SỬ ĐẶT BÀN ── -->
-          <div v-else-if="activeTab === 'history'" class="glass-card p-4 rounded-4 bg-white border shadow-2xs">
-            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
-              <div>
-                <h5 class="fw-bold brand-font text-dark mb-0">
-                  <i class="fa-solid fa-clock-rotate-left text-danger me-2"></i>{{ langStore.isEnglish ? 'Reservation History' : 'Lịch Sử Đặt Bàn Gần Đây' }}
-                </h5>
-                <small class="text-muted fs-8">{{ langStore.isEnglish ? 'All your table bookings and pre-orders at 3 Miền Cua.' : 'Toàn bộ các đơn đặt bàn, món ăn đặt trước và hóa đơn của bạn.' }}</small>
-              </div>
-              <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-1 fs-8 fw-bold">
-                {{ reservations.length }} {{ langStore.isEnglish ? 'bookings' : 'lượt đặt' }}
-              </span>
-            </div>
-
-            <div v-if="reservations.length === 0" class="text-center py-5 text-muted">
-              <i class="fa-solid fa-calendar-xmark display-6 text-secondary opacity-40 mb-2 d-block"></i>
-              <p class="small mb-3">{{ langStore.isEnglish ? 'No reservations found.' : 'Bạn chưa có lượt đặt bàn nào.' }}</p>
-              <router-link to="/dat-ban" class="btn btn-primary-crab px-4 fw-bold">
-                <i class="fa-solid fa-calendar-check me-1"></i> {{ langStore.isEnglish ? 'Book Table Now' : 'Đặt Bàn Ngay' }}
-              </router-link>
-            </div>
-
-            <div v-else class="d-flex flex-column gap-2.5">
-              <div
-                v-for="r in reservations"
-                :key="r._id"
-                class="p-3 rounded-4 border bg-white shadow-2xs d-flex align-items-center justify-content-between gap-3 flex-wrap hover-border-danger transition-all"
-              >
-                <div class="d-flex align-items-center gap-3">
-                  <div class="p-2.5 bg-danger bg-opacity-10 text-danger rounded-3 text-center" style="min-width: 48px;">
-                    <i class="fa-solid fa-calendar-day fs-5"></i>
-                  </div>
-                  <div>
-                    <div class="d-flex align-items-center gap-2 mb-0.5">
-                      <strong class="text-dark brand-font fs-7">{{ r.reservationCode }}</strong>
-                      <span :class="['badge rounded-pill px-2 py-0.5 fs-9 fw-semibold', statusClass(r.status)]">
-                        {{ statusLabel(r.status) }}
-                      </span>
-                    </div>
-                    <small class="text-muted fs-8 d-block">
-                      <i class="fa-solid fa-clock me-1 text-danger"></i>
-                      {{ new Date(r.startAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) }}
-                      · {{ r.guestsCount }} {{ langStore.isEnglish ? 'pax' : 'khách' }}
-                      <span v-if="r.tables?.length">· {{ r.tables.map(t => 'Bàn ' + t.tableNumber).join(', ') }}</span>
-                    </small>
-                  </div>
-                </div>
-
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                  <router-link
-                    v-if="r.status === 'ARRIVED'"
-                    :to="`/goi-mon?session=${r.session?.sessionCode || r.sessionCode || r.reservationCode}`"
-                    class="btn btn-danger btn-sm rounded-pill px-3 fs-8 fw-bold shadow-2xs"
-                  >
-                    <i class="fa-solid fa-utensils me-1"></i>
-                    {{ langStore.isEnglish ? 'Order Dishes' : 'Gọi Món Tại Bàn' }}
-                  </router-link>
-                  <router-link :to="`/tra-cuu?code=${r.reservationCode}`" class="btn btn-outline-danger btn-sm rounded-pill px-3 fs-8 fw-semibold">
-                    <i class="fa-solid fa-receipt me-1"></i>
-                    {{ langStore.isEnglish ? 'View Receipt' : 'Chi Tiết & Hóa Đơn' }}
-                  </router-link>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
+
+    <!-- ═══ E-INVOICE MODAL ═══ -->
+    <EInvoiceModal
+      v-if="selectedInvoice"
+      :invoice="selectedInvoice"
+      @close="selectedInvoice = null"
+    />
   </div>
 </template>
 
@@ -371,6 +543,8 @@ import { useAuthStore } from "../../stores/authStore";
 import { useReservationStore } from "../../stores/reservationStore";
 import { useLangStore } from "../../stores/langStore";
 import { toast } from "../../composables/useToast";
+import { getImageUrl } from "../../utils/imageHelper";
+import EInvoiceModal from "../../components/customer/EInvoiceModal.vue";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -380,7 +554,13 @@ const reservationStore = useReservationStore();
 const activeTab = ref("info");
 const saving = ref(false);
 const showPass = ref(false);
+
 const reservations = ref([]);
+const invoices = ref([]);
+const invoicesLoading = ref(false);
+const favoriteDishes = ref([]);
+const favoritesLoading = ref(false);
+const selectedInvoice = ref(null);
 const rankInfo = ref(null);
 
 const profile = reactive({
@@ -394,10 +574,12 @@ const profile = reactive({
 const passwordForm = reactive({ currentPassword: "", newPassword: "" });
 
 const tabs = computed(() => [
-  { key: "info", icon: "fa-solid fa-id-card", badge: null },
-  { key: "address", icon: "fa-solid fa-location-dot", badge: profile.addresses.length ? `${profile.addresses.length}` : null },
-  { key: "password", icon: "fa-solid fa-shield-halved", badge: null },
-  { key: "history", icon: "fa-solid fa-clock-rotate-left", badge: reservations.value.length ? `${reservations.value.length}` : null },
+  { key: "info", title: "Thông Tin", icon: "fa-solid fa-id-card", badge: null },
+  { key: "invoices", title: "Lịch Sử Hóa Đơn", icon: "fa-solid fa-file-invoice-dollar", badge: invoices.value.length ? `${invoices.value.length}` : null },
+  { key: "favorites", title: "Món Yêu Thích", icon: "fa-solid fa-heart", badge: favoriteDishes.value.length ? `${favoriteDishes.value.length}` : null },
+  { key: "history", title: "Lịch Sử Đặt Bàn", icon: "fa-solid fa-clock-rotate-left", badge: reservations.value.length ? `${reservations.value.length}` : null },
+  { key: "address", title: "Sổ Địa Chỉ", icon: "fa-solid fa-location-dot", badge: profile.addresses.length ? `${profile.addresses.length}` : null },
+  { key: "password", title: "Đổi Mật Khẩu", icon: "fa-solid fa-shield-halved", badge: null },
 ]);
 
 const statusClass = (s) => ({
@@ -415,6 +597,17 @@ const statusLabel = (s) => ({
   CANCELLED: langStore.isEnglish ? "Cancelled" : "Đã Hủy",
   COMPLETED: langStore.isEnglish ? "Completed" : "Hoàn Tất",
 })[s] || s;
+
+const paymentMethodLabel = (method) => {
+  switch (method) {
+    case "CASH": return "Tiền mặt";
+    case "BANK_TRANSFER": return "Chuyển khoản VietQR";
+    case "CARD": return "Quẹt thẻ POS";
+    case "MOMO": return "Ví MoMo";
+    case "VNPAY": return "VNPay QR";
+    default: return method || "Tiền mặt";
+  }
+};
 
 const loadProfile = async () => {
   try {
@@ -434,6 +627,44 @@ const loadProfile = async () => {
   } catch (err) {
     toast.error("Không tải được hồ sơ: " + err.message);
   }
+};
+
+const loadInvoices = async () => {
+  invoicesLoading.value = true;
+  try {
+    const res = await api.get("/invoices/my-invoices?limit=50");
+    invoices.value = res.data.data?.invoices || [];
+  } catch (err) {
+    console.error("Lỗi tải hóa đơn:", err);
+  } finally {
+    invoicesLoading.value = false;
+  }
+};
+
+const loadFavorites = async () => {
+  favoritesLoading.value = true;
+  try {
+    const favs = await authStore.fetchFavorites();
+    favoriteDishes.value = favs.filter(Boolean);
+  } catch (err) {
+    console.error("Lỗi tải món yêu thích:", err);
+  } finally {
+    favoritesLoading.value = false;
+  }
+};
+
+const removeFavorite = async (dishId) => {
+  try {
+    await authStore.toggleFavorite(dishId);
+    favoriteDishes.value = favoriteDishes.value.filter((d) => (d._id || d) !== dishId);
+    toast.success("Đã bỏ món khỏi danh sách yêu thích");
+  } catch (err) {
+    toast.error(err.message);
+  }
+};
+
+const viewInvoice = (inv) => {
+  selectedInvoice.value = inv;
 };
 
 const saveInfo = async () => {
@@ -496,8 +727,11 @@ const handleLogout = () => {
 
 onMounted(async () => {
   await loadProfile();
-  await reservationStore.fetchMyReservations();
-  reservations.value = reservationStore.myReservations;
+  loadInvoices();
+  loadFavorites();
+  reservationStore.fetchMyReservations().then(() => {
+    reservations.value = reservationStore.myReservations;
+  });
 });
 </script>
 
@@ -552,6 +786,10 @@ onMounted(async () => {
 .hover-border-danger:hover {
   border-color: #dc2626 !important;
   transform: translateY(-1px);
+}
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
 }
 .shadow-2xs {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
