@@ -83,8 +83,10 @@
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 p-2 mt-2" style="min-width: 220px;">
               <li v-if="authStore.isStaff">
-                <router-link to="/admin" class="dropdown-item rounded-3 py-2 fw-medium text-danger">
-                  <i class="fa-solid fa-chart-line me-2"></i> {{ langStore.isEnglish ? 'POS Dashboard' : 'Trang Quản Lý POS' }}
+                <router-link :to="authStore.user?.role === 'staff' ? '/admin/pos' : '/admin'" class="dropdown-item rounded-3 py-2 fw-medium text-danger">
+                  <i class="fa-solid fa-cash-register me-2" v-if="authStore.user?.role === 'staff'"></i>
+                  <i class="fa-solid fa-chart-line me-2" v-else></i>
+                  {{ authStore.user?.role === 'staff' ? 'Màn Hình POS Bán Hàng' : (langStore.isEnglish ? 'Admin Dashboard' : 'Trang Quản Trị Nhà Hàng') }}
                 </router-link>
               </li>
               <li>

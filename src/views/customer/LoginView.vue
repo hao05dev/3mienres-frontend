@@ -151,7 +151,13 @@ const handleLogin = async () => {
   errorMsg.value = "";
   try {
     await authStore.login(email.value, password.value);
-    const redirectPath = route.query.redirect || (authStore.isStaff ? "/admin" : "/");
+    let defaultRedirect = "/";
+    if (authStore.user?.role === "staff") {
+      defaultRedirect = "/admin/pos";
+    } else if (authStore.user?.role === "manager" || authStore.user?.role === "admin") {
+      defaultRedirect = "/admin";
+    }
+    const redirectPath = route.query.redirect || defaultRedirect;
     router.push(redirectPath);
   } catch (err) {
     errorMsg.value = err.message;

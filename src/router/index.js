@@ -64,22 +64,22 @@ const routes = [
     component: AdminLayout,
     meta: { requiresAuth: true, roles: ["staff", "manager", "admin"] },
     children: [
-      { path: "", name: "admin-dashboard", component: DashboardView, alias: ["dashboard"] },
-      { path: "tables", name: "admin-tables", component: TableGridManagerView },
-      { path: "reservations", name: "admin-reservations", component: ReservationManagerView },
-      { path: "calendar", name: "admin-calendar", component: ReservationCalendarView },
-      { path: "pos", name: "admin-pos", component: POSDiningSessionView },
-      { path: "kitchen", name: "admin-kitchen", component: KitchenView },
-      { path: "menu", name: "admin-menu", component: MenuManagerView },
-      { path: "reviews", name: "admin-reviews", component: ReviewManagerView },
-      { path: "inventory", name: "admin-inventory", component: InventoryManagerView },
-      { path: "suppliers", name: "admin-suppliers", component: SupplierManagerView },
-      { path: "vouchers", name: "admin-vouchers", component: VoucherManagerView },
+      { path: "", name: "admin-dashboard", component: DashboardView, alias: ["dashboard"], meta: { roles: ["admin", "manager"] } },
+      { path: "tables", name: "admin-tables", component: TableGridManagerView, meta: { roles: ["admin", "manager"] } },
+      { path: "reservations", name: "admin-reservations", component: ReservationManagerView, meta: { roles: ["staff", "manager", "admin"] } },
+      { path: "calendar", name: "admin-calendar", component: ReservationCalendarView, meta: { roles: ["staff", "manager", "admin"] } },
+      { path: "pos", name: "admin-pos", component: POSDiningSessionView, meta: { roles: ["staff", "manager", "admin"] } },
+      { path: "kitchen", name: "admin-kitchen", component: KitchenView, meta: { roles: ["staff", "manager", "admin"] } },
+      { path: "menu", name: "admin-menu", component: MenuManagerView, meta: { roles: ["admin", "manager"] } },
+      { path: "reviews", name: "admin-reviews", component: ReviewManagerView, meta: { roles: ["admin", "manager"] } },
+      { path: "inventory", name: "admin-inventory", component: InventoryManagerView, meta: { roles: ["admin", "manager"] } },
+      { path: "suppliers", name: "admin-suppliers", component: SupplierManagerView, meta: { roles: ["admin", "manager"] } },
+      { path: "vouchers", name: "admin-vouchers", component: VoucherManagerView, meta: { roles: ["admin", "manager"] } },
       { path: "users", name: "admin-users", component: UserManagerView, meta: { roles: ["admin", "manager"] } },
       { path: "staff", name: "admin-staff", component: StaffManagerView, meta: { roles: ["admin"] } },
       { path: "audit-logs", name: "admin-audit", component: AuditLogView, meta: { roles: ["admin"] } },
       { path: "settings", name: "admin-settings", component: SettingsView, meta: { roles: ["admin"] } },
-      { path: "invoice/:sessionId", name: "admin-invoice-print", component: PrintInvoiceView },
+      { path: "invoice/:sessionId", name: "admin-invoice-print", component: PrintInvoiceView, meta: { roles: ["staff", "manager", "admin"] } },
     ],
   },
   {
@@ -97,7 +97,7 @@ const router = createRouter({
   },
 });
 
-// Guard kiểm tra đăng nhập & quyền truy cập
+// Guard kiểm tra đăng nhập & quyền truy cập theo từng vai trò (Role-based Access Control)
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -106,9 +106,22 @@ router.beforeEach((to, from, next) => {
     if (!token || !user) {
       return next({ name: "login", query: { redirect: to.fullPath } });
     }
+
+    // Nếu là nhân viên (staff) truy cập vào gốc /admin hoặc trang không có quyền -> Tự động chuyển thẳng vào POS
+    if (user.role === "staff") {
+      if (
+        to.path === "/admin" ||
+        to.path === "/admin/" ||
+        to.name === "admin-dashboard" ||
+        (to.meta.roles && !to.meta.roles.includes("staff"))
+      ) {
+        return next({ name: "admin-pos" });
+      }
+    }
+
     if (to.meta.roles && !to.meta.roles.includes(user.role)) {
-      toast.error("Bạn không có quyền truy cập vào phân vùng quản trị!");
-      return next({ name: "home" });
+      toast.error("Bạn không có quyền truy cập vào chức năng này!");
+      return next(user.role === "staff" ? { name: "admin-pos" } : { name: "home" });
     }
   }
 
