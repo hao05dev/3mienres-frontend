@@ -31,6 +31,7 @@
           @open-qr="openQrModal"
           @change-table="openChangeTableModal"
           @merge-table="openMergeModal"
+          @print-precheck="handlePrintPrecheck"
           @dish-status="openDishStatusModal"
           @order="openOrderModal"
           @checkout="openCheckoutModal"
@@ -258,18 +259,25 @@ const submitChangeTables = async (tableIds) => {
   }
 };
 
-const submitOrder = async (basket) => {
+const handlePrintPrecheck = (session) => {
+  router.push(`/admin/invoice/${session._id}?preCheck=true`);
+};
+
+const submitOrder = async (orderPayload) => {
   try {
+    const basket = Array.isArray(orderPayload) ? orderPayload : orderPayload.items;
+    const notes = typeof orderPayload === "object" && orderPayload.notes ? orderPayload.notes : "Nhân viên gọi món tại bàn qua POS";
+
     const items = basket.map((item) => ({
       dish: item.dishId,
       quantity: item.quantity,
       price: item.price,
-      notes: "",
+      notes: item.notes || "",
     }));
     await api.post("/orders", {
       diningSessionId: selectedSession.value._id,
       items,
-      notes: "Nhân viên gọi món tại bàn qua POS",
+      notes,
     });
     toast.success("Đã gửi đơn gọi món xuống Bếp thành công!");
     showOrderModal.value = false;

@@ -126,6 +126,74 @@
         </div>
       </div>
 
+      <!-- ═══ BIỂU ĐỒ GIỜ CAO ĐIỂM (PEAK HOURS ANALYTICS) ═══ -->
+      <div class="glass-card p-4 rounded-4 bg-white shadow-sm mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <div>
+            <h5 class="fw-bold brand-font text-dark mb-0">
+              <i class="fa-solid fa-chart-simple text-danger me-2"></i>
+              {{ langStore.isEnglish ? 'Peak Hours Analytics (08:00 - 23:00)' : 'Biểu Đồ Giờ Cao Điểm Nhà Hàng (08:00 – 23:00)' }}
+            </h5>
+            <small class="text-muted">Mật độ lượng khách và doanh thu theo từng khung giờ trong ngày</small>
+          </div>
+
+          <div class="d-flex align-items-center gap-3 fs-8">
+            <span class="d-inline-flex align-items-center gap-1">
+              <span class="badge bg-danger p-1 rounded-circle" style="width: 10px; height: 10px;"></span> Giờ cao điểm vàng
+            </span>
+            <span class="d-inline-flex align-items-center gap-1">
+              <span class="badge bg-secondary opacity-50 p-1 rounded-circle" style="width: 10px; height: 10px;"></span> Giờ thường nhật
+            </span>
+          </div>
+        </div>
+
+        <!-- Visual Bar Chart -->
+        <div class="peak-hours-chart-container pt-3 pb-2">
+          <div class="d-flex align-items-end justify-content-between gap-1 h-100" style="min-height: 180px;">
+            <div
+              v-for="slot in peakHoursData"
+              :key="slot.hour"
+              class="peak-hour-col text-center d-flex flex-column align-items-center justify-content-end flex-grow-1"
+              :title="`${slot.label}: ${slot.orderCount} lượt thanh toán (${slot.revenue.toLocaleString('vi-VN')}đ)`"
+            >
+              <small class="fs-10 text-muted fw-bold mb-1" v-if="slot.orderCount > 0">{{ slot.orderCount }}</small>
+              <div
+                class="peak-bar rounded-top-3 transition-all"
+                :style="{
+                  height: getBarHeight(slot.orderCount) + 'px',
+                  backgroundColor: isPeakHour(slot.hour) ? '#dc2626' : (slot.orderCount > 0 ? '#f87171' : '#e2e8f0')
+                }"
+              ></div>
+              <span class="peak-hour-label mt-1.5 fs-10" :class="isPeakHour(slot.hour) ? 'fw-bold text-danger' : 'text-muted'">
+                {{ slot.hour }}h
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Khung tóm tắt giờ cao điểm -->
+        <div class="row g-2 mt-2 pt-3 border-top">
+          <div class="col-md-6">
+            <div class="p-2.5 rounded-3 bg-danger bg-opacity-10 border border-danger border-opacity-25 d-flex align-items-center gap-2.5">
+              <i class="fa-solid fa-sun text-danger fs-5"></i>
+              <div>
+                <strong class="d-block text-danger fs-8">Cao Điểm Ca Trưa: 11:30 – 13:30</strong>
+                <small class="text-secondary fs-9">Tập trung khách văn phòng, gia đình và khách dùng lẩu nhanh.</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-2.5 rounded-3 bg-warning bg-opacity-15 border border-warning border-opacity-50 d-flex align-items-center gap-2.5">
+              <i class="fa-solid fa-moon text-dark fs-5"></i>
+              <div>
+                <strong class="d-block text-dark fs-8">Cao Điểm Ca Tối: 18:30 – 21:00</strong>
+                <small class="text-secondary fs-9">Tập trung tiệc sinh nhật, liên hoan công ty, lẩu cua & hải sản đặc sản.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Charts & Top Dishes Row -->
       <div class="row g-4 mb-4">
         <!-- Top 5 Best Sellers -->
@@ -240,7 +308,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { connectSocket } from "../../services/socket";
 import api from "../../services/api";
 import { useLangStore } from "../../stores/langStore";
@@ -254,6 +322,7 @@ const lowStockIngredients = ref([]);
 const paymentBreakdown = ref([]);
 const reservationStatusCounts = ref([]);
 const orderStatusCounts = ref([]);
+const peakHoursData = ref([]);
 const depositStats = ref({ collected: 0, pending: 0 });
 
 const activePreset = ref("today");
@@ -262,6 +331,16 @@ const endDate = ref("");
 
 const resStatusCount = (status) => reservationStatusCounts.value.find((s) => s._id === status)?.count || 0;
 const orderStatusCount = (status) => orderStatusCounts.value.find((s) => s._id === status)?.count || 0;
+
+const isPeakHour = (hour) => {
+  return (hour >= 11 && hour <= 13) || (hour >= 18 && hour <= 21);
+};
+
+const getBarHeight = (count) => {
+  const maxCount = Math.max(1, ...peakHoursData.value.map((p) => p.orderCount));
+  const normalized = (count / maxCount) * 120;
+  return Math.max(count > 0 ? 16 : 4, normalized);
+};
 
 const formatDateString = (d) => {
   const year = d.getFullYear();
@@ -310,6 +389,7 @@ const fetchData = async () => {
     paymentBreakdown.value = data.paymentMethodBreakdown || [];
     reservationStatusCounts.value = data.reservationStatusCounts || [];
     orderStatusCounts.value = data.orderStatusCounts || [];
+    peakHoursData.value = data.peakHours || [];
     depositStats.value = data.depositStats || { collected: 0, pending: 0 };
   } catch (err) {
     console.error("Lỗi lấy dữ liệu Dashboard:", err);
@@ -319,44 +399,57 @@ const fetchData = async () => {
   }
 };
 
-const exportCsv = async () => {
-  try {
-    const params = {};
-    if (startDate.value) params.startDate = startDate.value;
-    if (endDate.value) params.endDate = endDate.value;
-    const res = await api.get("/dashboard/export-invoices", { params, responseType: "blob" });
-    const url = window.URL.createObjectURL(new Blob([res.data]));
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "bao-cao-hoa-don.csv");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    toast.success(langStore.isEnglish ? "Exported!" : "Đã xuất báo cáo Excel!");
-  } catch (err) {
-    toast.error(langStore.isEnglish ? "Export failed!" : "Xuất báo cáo thất bại!");
-  }
+const exportCsv = () => {
+  const headers = ["Khung Gio", "So Luot Don", "Doanh Thu (VND)"];
+  const rows = peakHoursData.value.map((p) => [
+    p.label,
+    p.orderCount,
+    p.revenue,
+  ]);
+  const csvContent =
+    "data:text/csv;charset=utf-8," +
+    [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `Bao_Cao_Gio_Cao_Diem_${startDate.value || 'today'}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  toast.success("Đã xuất báo cáo CSV thành công!");
 };
-
-let socketInstance = null;
 
 onMounted(() => {
   setPreset("today");
-  socketInstance = connectSocket();
-  if (socketInstance) {
-    socketInstance.on("invoices:changed", fetchData);
-    socketInstance.on("reservations:changed", fetchData);
-    socketInstance.on("sessions:changed", fetchData);
-    socketInstance.on("orders:changed", fetchData);
-  }
-});
-
-onBeforeUnmount(() => {
-  if (socketInstance) {
-    socketInstance.off("invoices:changed", fetchData);
-    socketInstance.off("reservations:changed", fetchData);
-    socketInstance.off("sessions:changed", fetchData);
-    socketInstance.off("orders:changed", fetchData);
+  const socket = connectSocket();
+  if (socket) {
+    socket.on("orders:changed", () => fetchData());
+    socket.on("invoices:changed", () => fetchData());
+    socket.on("reservations:changed", () => fetchData());
   }
 });
 </script>
+
+<style scoped>
+.peak-hours-chart-container {
+  overflow-x: auto;
+}
+.peak-hour-col {
+  min-width: 38px;
+}
+.peak-bar {
+  width: 100%;
+  max-width: 24px;
+  min-height: 4px;
+}
+.peak-bar:hover {
+  filter: brightness(1.15);
+  transform: scaleY(1.05);
+}
+.fs-10 {
+  font-size: 0.7rem;
+}
+.transition-all {
+  transition: all 0.2s ease;
+}
+</style>

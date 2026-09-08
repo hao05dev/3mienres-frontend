@@ -64,7 +64,7 @@ const routes = [
     component: AdminLayout,
     meta: { requiresAuth: true, roles: ["staff", "manager", "admin"] },
     children: [
-      { path: "", name: "admin-dashboard", component: DashboardView },
+      { path: "", name: "admin-dashboard", component: DashboardView, alias: ["dashboard"] },
       { path: "tables", name: "admin-tables", component: TableGridManagerView },
       { path: "reservations", name: "admin-reservations", component: ReservationManagerView },
       { path: "calendar", name: "admin-calendar", component: ReservationCalendarView },

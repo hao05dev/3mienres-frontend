@@ -24,7 +24,7 @@
           </div>
 
           <button @click="printInvoice" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
-            <i class="fa-solid fa-print me-1"></i> In Hóa Đơn
+            <i class="fa-solid fa-print me-1"></i> {{ isPreCheck ? 'In Phiếu Tạm Tính' : 'In Hóa Đơn' }}
           </button>
         </div>
       </div>
@@ -56,7 +56,9 @@
 
         <div class="d-flex justify-content-between align-items-center mb-3">
           <div>
-            <div class="small text-muted" :style="paperFormat === 'K80' ? 'font-size: 0.7rem;' : ''">PHIẾU THANH TOÁN</div>
+            <div class="small fw-bold" :class="isPreCheck ? 'text-warning text-dark' : 'text-muted'" :style="paperFormat === 'K80' ? 'font-size: 0.7rem;' : ''">
+              {{ isPreCheck ? 'PHIẾU TẠM TÍNH (PRE-CHECK)' : 'PHIẾU THANH TOÁN (HÓA ĐƠN)' }}
+            </div>
             <strong class="text-danger" :class="paperFormat === 'K80' ? 'fs-7' : 'fs-5'">{{ invoice.invoiceCode }}</strong>
           </div>
           <div class="text-end">
@@ -70,12 +72,12 @@
         <!-- Thông tin khách & Bàn -->
         <div class="p-2.5 bg-light rounded-3 mb-3" :style="paperFormat === 'K80' ? 'font-size: 0.75rem;' : ''">
           <div class="d-flex justify-content-between mb-1">
-            <span class="text-muted">Khách: <strong>{{ invoice.diningSession?.customerName }}</strong></span>
+            <span class="text-muted">Khách: <strong>{{ invoice.diningSession?.customerName || 'Khách dùng bữa' }}</strong></span>
             <span class="text-muted">Bàn: <strong class="text-danger">{{ tableNumbers }}</strong></span>
           </div>
           <div class="d-flex justify-content-between">
             <span class="text-muted">Mã bàn: {{ invoice.diningSession?.sessionCode }}</span>
-            <span class="text-muted">Thu ngân: {{ invoice.cashier?.name || 'Admin' }}</span>
+            <span class="text-muted">Thu ngân / Phục vụ: {{ invoice.cashier?.name || 'Nhân viên phục vụ' }}</span>
           </div>
         </div>
 
@@ -91,57 +93,65 @@
           </thead>
           <tbody>
             <template v-for="order in invoice.orders" :key="order._id">
-              <tr v-for="item in order.items" :key="item._id">
+              <tr v-for="item in order.items" :key="item._id || item.dish?._id">
                 <td><strong class="text-dark">{{ item.dish?.name || 'Món' }}</strong></td>
                 <td class="text-center">{{ item.quantity }}</td>
-                <td class="text-end text-muted">{{ item.price.toLocaleString('vi-VN') }}</td>
-                <td class="text-end fw-bold">{{ (item.price * item.quantity).toLocaleString('vi-VN') }}</td>
+                <td class="text-end text-muted">{{ (item.price || 0).toLocaleString('vi-VN') }}</td>
+                <td class="text-end fw-bold">{{ ((item.price || 0) * (item.quantity || 1)).toLocaleString('vi-VN') }}</td>
               </tr>
             </template>
           </tbody>
         </table>
 
-        <!-- Tổng tiền -->
-        <div class="border-top pt-2" :class="paperFormat === 'K80' ? 'border-dashed' : ''" :style="paperFormat === 'K80' ? 'font-size: 0.78rem;' : ''">
+        <!-- Tính tiền -->
+        <div class="border-top pt-2" :style="paperFormat === 'K80' ? 'font-size: 0.75rem;' : ''">
           <div class="d-flex justify-content-between mb-1">
-            <span class="text-muted">Tạm tính:</span>
-            <strong>{{ invoice.subtotal.toLocaleString('vi-VN') }}đ</strong>
+            <span class="text-muted">Tổng tiền món:</span>
+            <strong>{{ (invoice.totalAmount || 0).toLocaleString('vi-VN') }}đ</strong>
           </div>
           <div v-if="invoice.discountAmount > 0" class="d-flex justify-content-between mb-1 text-success">
-            <span>Giảm giá:</span>
-            <strong>-{{ invoice.discountAmount.toLocaleString('vi-VN') }}đ</strong>
+            <span>Giảm giá khuyến mãi:</span>
+            <span>-{{ (invoice.discountAmount || 0).toLocaleString('vi-VN') }}đ</span>
+          </div>
+          <div v-if="invoice.depositDeducted > 0" class="d-flex justify-content-between mb-1 text-primary">
+            <span>Khấu trừ tiền cọc giữ chỗ:</span>
+            <span>-{{ (invoice.depositDeducted || 0).toLocaleString('vi-VN') }}đ</span>
           </div>
           <div v-if="invoice.taxAmount > 0" class="d-flex justify-content-between mb-1">
-            <span class="text-muted">VAT ({{ invoice.taxPercent }}%):</span>
-            <strong>+{{ invoice.taxAmount.toLocaleString('vi-VN') }}đ</strong>
-          </div>
-          <div v-if="invoice.depositDeducted > 0" class="d-flex justify-content-between mb-1 text-success">
-            <span>Trừ cọc trước:</span>
-            <strong>-{{ invoice.depositDeducted.toLocaleString('vi-VN') }}đ</strong>
+            <span class="text-muted">Thuế VAT ({{ invoice.taxPercent }}%):</span>
+            <span>+{{ (invoice.taxAmount || 0).toLocaleString('vi-VN') }}đ</span>
           </div>
 
-          <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top" :class="paperFormat === 'K80' ? 'border-dashed' : ''">
-            <strong :class="paperFormat === 'K80' ? 'fs-7' : 'fs-6'">TỔNG THANH TOÁN:</strong>
-            <strong class="text-danger" :class="paperFormat === 'K80' ? 'fs-5' : 'fs-4'">
-              {{ invoice.finalAmount.toLocaleString('vi-VN') }}đ
-            </strong>
+          <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-2" :class="paperFormat === 'K80' ? 'border-dashed' : ''">
+            <span class="fw-bold" :class="paperFormat === 'K80' ? 'fs-7' : 'fs-6'">
+              {{ isPreCheck ? 'TỔNG TẠM TÍNH:' : 'TỔNG CẦN THANH TOÁN:' }}
+            </span>
+            <span class="display-6 fw-bold text-danger brand-font" :class="paperFormat === 'K80' ? 'fs-5' : 'fs-4'">
+              {{ (invoice.finalAmount || 0).toLocaleString('vi-VN') }}đ
+            </span>
           </div>
-          <div class="text-center text-muted mt-2" :style="paperFormat === 'K80' ? 'font-size: 0.72rem;' : 'font-size: 0.85rem;'">
-            Phương thức: <strong>{{ paymentMethodLabel }}</strong>
+
+          <div class="d-flex justify-content-between small text-muted mt-1">
+            <span>Hình thức:</span>
+            <span>{{ isPreCheck ? 'Chưa thanh toán (Tạm tính)' : paymentMethodLabel }}</span>
           </div>
         </div>
 
-        <div class="text-center mt-4 pt-3 border-top" :class="paperFormat === 'K80' ? 'border-dashed' : ''">
-          <p class="mb-1 fw-semibold text-dark" :style="paperFormat === 'K80' ? 'font-size: 0.75rem;' : 'font-size: 0.85rem;'">
-            Cảm ơn quý khách đã dùng bữa tại 3 Miền Cua!
+        <!-- Footer -->
+        <div class="text-center pt-4 mt-3 border-top" :class="paperFormat === 'K80' ? 'border-dashed' : ''">
+          <p v-if="isPreCheck" class="small fw-bold text-danger mb-1">
+            *** ĐÂY LÀ PHIẾU TẠM TÍNH ĐỐI SOÁT MÓN ***<br />
+            Quý khách vui lòng kiểm tra lại món trước khi thanh toán. Cảm ơn quý khách!
           </p>
-          <p class="text-muted mb-0" :style="paperFormat === 'K80' ? 'font-size: 0.68rem;' : 'font-size: 0.8rem;'">
-            Hân hạnh được đón tiếp quý khách lần sau.
+          <p v-else class="small text-muted mb-1">
+            Cảm ơn quý khách đã thưởng thức ẩm thực tại 3 Miền Cua!<br />
+            Hẹn gặp lại quý khách lần sau.
           </p>
+          <small class="text-secondary" :style="paperFormat === 'K80' ? 'font-size: 0.65rem;' : ''">
+            Wifi: 3MienCua_VIP · Pass: 3miencua2026
+          </small>
         </div>
       </div>
-
-      <div v-else class="text-center py-5 text-muted">Không tìm thấy hóa đơn này</div>
     </div>
   </div>
 </template>
@@ -154,12 +164,14 @@ import { toast } from "../../composables/useToast";
 
 const route = useRoute();
 const invoice = ref(null);
-const loading = ref(false);
-const paperFormat = ref("K80"); // Mặc định máy in nhiệt K80
+const loading = ref(true);
+const paperFormat = ref("K80"); // Mặc định máy in nhiệt K80 chuẩn nhà hàng
+
+const isPreCheck = computed(() => route.query.preCheck === "true");
 
 const tableNumbers = computed(() => {
   const tables = invoice.value?.diningSession?.tables || [];
-  return tables.map((t) => t.tableNumber).join(" + ") || "—";
+  return tables.map((t) => t.tableNumber || t).join(" + ") || "—";
 });
 
 const paymentMethodLabel = computed(() => {
@@ -179,10 +191,40 @@ const printInvoice = () => window.print();
 onMounted(async () => {
   loading.value = true;
   try {
-    const res = await api.get(`/invoices/session/${route.params.sessionId}`);
-    invoice.value = res.data.data.invoice;
+    if (isPreCheck.value) {
+      // Tải thông tin phiên ăn và các đơn gọi món để tạo phiếu tạm tính
+      const sessionRes = await api.get(`/dining-sessions/${route.params.sessionId}`);
+      const ordersRes = await api.get(`/orders/session/${route.params.sessionId}`);
+      const session = sessionRes.data.data.session;
+      const orders = ordersRes.data.data.orders || [];
+
+      let total = 0;
+      orders.forEach((o) => {
+        (o.items || []).forEach((it) => {
+          total += (it.price || 0) * (it.quantity || 1);
+        });
+      });
+
+      const deposit = session.reservation?.depositAmount || 0;
+      const finalAmt = Math.max(0, total - deposit);
+
+      invoice.value = {
+        invoiceCode: `PRE-${session.sessionCode}`,
+        diningSession: session,
+        orders,
+        totalAmount: total,
+        discountAmount: 0,
+        depositDeducted: deposit,
+        taxAmount: 0,
+        finalAmount: finalAmt,
+        paidAt: null,
+      };
+    } else {
+      const res = await api.get(`/invoices/session/${route.params.sessionId}`);
+      invoice.value = res.data.data.invoice;
+    }
   } catch (err) {
-    toast.error("Không tải được hóa đơn: " + err.message);
+    toast.error("Không tải được thông tin: " + err.message);
   } finally {
     loading.value = false;
   }

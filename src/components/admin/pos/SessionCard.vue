@@ -43,6 +43,9 @@
       <button @click="$emit('merge-table', session)" class="btn btn-outline-danger btn-sm rounded-circle p-2" title="Gộp bàn / Gộp hóa đơn từ bàn khác vào bàn này">
         <i class="fa-solid fa-code-merge"></i>
       </button>
+      <button @click="$emit('print-precheck', session)" class="btn btn-outline-info text-dark btn-sm rounded-circle p-2" title="In phiếu tạm tính (Pre-check Bill) cho khách kiểm tra">
+        <i class="fa-solid fa-print"></i>
+      </button>
       <button @click="$emit('dish-status', session)" class="btn btn-outline-warning text-dark btn-sm rounded-circle p-2" title="Xem danh sách món & trạng thái bếp">
         <i class="fa-solid fa-list-check"></i>
       </button>
@@ -66,7 +69,7 @@ const props = defineProps({
   },
 });
 
-defineEmits(["open-qr", "change-table", "merge-table", "dish-status", "order", "checkout"]);
+defineEmits(["open-qr", "change-table", "merge-table", "print-precheck", "dish-status", "order", "checkout"]);
 
 const tableNumbers = computed(() => {
   const tables = props.session?.tables || [];

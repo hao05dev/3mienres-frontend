@@ -91,3 +91,4 @@ class SoundHelper {
 }
 
 export const soundHelper = new SoundHelper();
+export default soundHelper;
