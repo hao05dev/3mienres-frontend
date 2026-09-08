@@ -44,6 +44,19 @@
                 <strong class="text-danger fs-7">{{ selectedTables.map(t => 'Bàn ' + t.tableNumber).join(' + ') }}</strong>
               </div>
             </div>
+            <div class="col-12">
+              <div class="p-2.5 bg-white rounded-3 border d-flex justify-content-between align-items-center">
+                <div>
+                  <small class="text-muted d-block fs-8">{{ isEnglish ? 'Booking Type' : 'Loại hình đặt chỗ' }}</small>
+                  <strong class="text-dark fs-7">
+                    {{ form.type === 'EVENT' ? (isEnglish ? '🎉 Event & Party Booking' : '🎉 Đặt Tiệc & Sự Kiện') : (isEnglish ? '🍽️ Standard Dining' : '🍽️ Dùng Bữa Thông Thường') }}
+                  </strong>
+                </div>
+                <span class="badge bg-light text-danger border border-danger rounded-pill px-2.5 py-1 fs-8 fw-semibold">
+                  <i class="fa-regular fa-clock me-1"></i>{{ form.type === 'EVENT' ? `${form.durationMinutes / 60} giờ (${form.durationMinutes}p)` : '120 phút (2 giờ)' }}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
