@@ -5,7 +5,6 @@
       <div v-if="!isOpen" class="chat-bubble-container" @click="toggleChat">
         <div class="chat-pulse-ring"></div>
         <button class="chat-floating-btn shadow-lg" title="Trợ lý AI 3 Miền Cua">
-          <i class="fa-solid fa-robot-astromech me-1 d-none d-sm-inline"></i>
           <span class="fs-4">🦀</span>
           <span class="badge-online"></span>
         </button>
@@ -14,7 +13,14 @@
             <strong class="text-primary-orange small"><i class="fa-solid fa-sparkles me-1"></i>Trợ Lý AI 3 Miền</strong>
             <button type="button" class="btn-close btn-close-xs" @click.stop="showWelcomeHint = false"></button>
           </div>
-          <p class="mb-0 text-muted small">Cần tư vấn món ngon, đặt bàn hay <strong>ghép bàn đoàn đông</strong>? Nhắn em ngay nhé!</p>
+          <p class="mb-0 text-muted small">
+            <span v-if="activeReservations.length > 0">
+              Bạn có <strong>bàn đã đặt sắp tới</strong>! Bấm để gọi thêm món ngay.
+            </span>
+            <span v-else>
+              Cần tư vấn món ngon, đặt bàn hay <strong>ghép bàn đoàn đông</strong>? Nhắn em ngay nhé!
+            </span>
+          </p>
         </div>
       </div>
     </transition>
@@ -34,9 +40,9 @@
             <div>
               <h6 class="mb-0 fw-bold d-flex align-items-center gap-1">
                 Trợ Lý AI 3 Miền Cua
-                <span class="badge bg-warning text-dark font-xs px-2 py-0.5 rounded-pill">AI 2.0</span>
+                <span class="badge bg-warning text-dark font-xs px-2 py-0.5 rounded-pill">RAG AI</span>
               </h6>
-              <p class="mb-0 font-xs opacity-75">Tư vấn món • Đặt bàn & Ghép bàn tức thì</p>
+              <p class="mb-0 font-xs opacity-75">Tư vấn món • Đặt bàn & Gọi món tức thì</p>
             </div>
           </div>
           <div class="d-flex align-items-center gap-1">
@@ -47,6 +53,29 @@
               <i class="fa-solid fa-chevron-down"></i>
             </button>
           </div>
+        </div>
+
+        <!-- Active Reservation Auto-Detected Banner (Không cần nhớ mã RES-XXXXXX) -->
+        <div v-if="activeReservations.length > 0" class="active-res-banner px-3 py-2 bg-warning-subtle border-bottom d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2 overflow-hidden">
+            <span class="fs-6">📅</span>
+            <div class="overflow-hidden">
+              <div class="font-xs fw-bold text-dark text-truncate">
+                Bàn đã đặt: {{ formatTableNames(activeReservations[0]) }} ({{ formatDateTime(activeReservations[0].startAt) }})
+              </div>
+              <div class="font-xs text-secondary text-truncate">
+                Mã: <strong>{{ activeReservations[0].reservationCode }}</strong> • {{ activeReservations[0].guestsCount }} khách
+              </div>
+            </div>
+          </div>
+          <button
+            class="btn btn-xs btn-primary-orange text-nowrap rounded-pill shadow-xs"
+            :class="{ 'btn-success': selectedActiveReservation?._id === activeReservations[0]._id }"
+            @click="selectActiveReservation(activeReservations[0])"
+          >
+            <i class="fa-solid fa-utensils me-1"></i>
+            {{ selectedActiveReservation?._id === activeReservations[0]._id ? 'Đang chọn' : 'Gọi món' }}
+          </button>
         </div>
 
         <!-- Chat Body / Messages -->
@@ -86,7 +115,37 @@
                 </div>
               </div>
 
-              <!-- Booking Preview Card -->
+              <!-- Add Dishes To Existing Booking Card (Bổ sung món vào bàn đã đặt) -->
+              <div v-if="msg.intent === 'ADD_DISH_TO_EXISTING_PREVIEW' && msg.dishesToAdd" class="booking-preview-card mt-3 p-3 rounded-3 shadow-sm border bg-white animate__animated animate__fadeIn">
+                <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                  <span class="fw-bold text-success font-sm">
+                    <i class="fa-solid fa-plus-circle me-1"></i> BỔ SUNG MÓN VÀO BÀN
+                  </span>
+                  <span class="badge bg-dark font-xs">
+                    {{ msg.targetReservation?.reservationCode || activeReservations[0]?.reservationCode }}
+                  </span>
+                </div>
+
+                <div class="preorder-summary mb-2 p-2 rounded-2 bg-light font-xs">
+                  <div class="fw-bold text-secondary mb-1">Món ăn bổ sung:</div>
+                  <div v-for="(d, dIdx) in msg.dishesToAdd" :key="dIdx" class="d-flex justify-content-between text-dark py-0.5">
+                    <span>• {{ d.dishName }} x {{ d.quantity }}</span>
+                    <span class="fw-semibold text-danger">{{ formatVND(d.price * d.quantity) }}</span>
+                  </div>
+                </div>
+
+                <button
+                  class="btn btn-success w-100 btn-sm fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
+                  :disabled="isSubmittingBooking"
+                  @click="handleConfirmAddToExisting(msg.dishesToAdd, msg.targetReservation || activeReservations[0])"
+                >
+                  <span v-if="isSubmittingBooking" class="spinner-border spinner-border-sm"></span>
+                  <i v-else class="fa-solid fa-check"></i>
+                  Cập Nhật Vào Bàn Ngay
+                </button>
+              </div>
+
+              <!-- Booking Preview Card (Đơn đặt bàn mới) -->
               <div v-if="msg.bookingData" class="booking-preview-card mt-3 p-3 rounded-3 shadow-sm border bg-white">
                 <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
                   <span class="fw-bold text-primary-orange font-sm">
@@ -200,8 +259,48 @@
           </div>
         </div>
 
+        <!-- Mini Quick Menu Drawer (Khay Thực Đơn Nhanh Trong Chat) -->
+        <transition name="slide-up">
+          <div v-if="showMiniMenu" class="mini-menu-drawer p-3 bg-white border-top shadow-lg">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0 fw-bold font-sm text-dark"><i class="fa-solid fa-book-open text-primary-orange me-1"></i> Thực Đơn Chọn Nhanh</h6>
+              <button type="button" class="btn-close btn-close-xs" @click="showMiniMenu = false"></button>
+            </div>
+            <!-- Category Tabs -->
+            <div class="d-flex gap-1 mb-2 overflow-x-auto pb-1">
+              <button
+                v-for="cat in quickCategories"
+                :key="cat.key"
+                class="badge rounded-pill border btn-xs py-1 px-2"
+                :class="activeMenuTab === cat.key ? 'bg-primary-orange text-white' : 'bg-light text-secondary'"
+                @click="activeMenuTab = cat.key"
+              >
+                {{ cat.label }}
+              </button>
+            </div>
+            <!-- Dishes list in drawer -->
+            <div class="mini-dishes-grid" style="max-height: 180px; overflow-y: auto;">
+              <div v-for="d in filteredMiniDishes" :key="d._id" class="mini-dish-row p-1.5 rounded border mb-1 d-flex justify-content-between align-items-center font-xs">
+                <div class="overflow-hidden me-2">
+                  <div class="fw-semibold text-truncate">{{ d.name }}</div>
+                  <div class="text-danger fw-bold">{{ formatVND(d.price) }}</div>
+                </div>
+                <button class="btn btn-outline-primary btn-xs rounded-pill" @click="selectDishFromRecommendation(d)">
+                  <i class="fa-solid fa-plus"></i> Chọn
+                </button>
+              </div>
+            </div>
+          </div>
+        </transition>
+
         <!-- Quick Prompt Chips -->
         <div class="quick-prompts-bar px-3 py-1 d-flex gap-2 overflow-x-auto">
+          <button
+            class="badge rounded-pill quick-chip-btn bg-warning-subtle text-warning-emphasis border font-xs fw-semibold text-nowrap"
+            @click="showMiniMenu = !showMiniMenu"
+          >
+            <i class="fa-solid fa-book-open me-1"></i> Thực Đơn Nhanh
+          </button>
           <button
             v-for="(chip, cIdx) in quickChips"
             :key="cIdx"
@@ -215,12 +314,20 @@
         <!-- Chat Input Bar -->
         <div class="chat-footer p-2 bg-white border-top rounded-bottom-4">
           <form @submit.prevent="sendMessage" class="d-flex align-items-center gap-2">
+            <button
+              type="button"
+              class="btn btn-sm btn-light rounded-circle text-muted"
+              title="Mở thực đơn nhanh"
+              @click="showMiniMenu = !showMiniMenu"
+            >
+              <i class="fa-solid fa-utensils font-xs text-primary-orange"></i>
+            </button>
             <input
               ref="inputField"
               v-model="inputPrompt"
               type="text"
               class="form-control form-control-sm border-0 bg-light rounded-pill px-3 py-2 font-sm"
-              placeholder="Nhắn yêu cầu (VD: Đặt bàn 8 người tối mai ghép bàn...)"
+              :placeholder="selectedActiveReservation ? `Thêm món cho bàn ${selectedActiveReservation.reservationCode}...` : 'Nhắn yêu cầu (VD: Đặt bàn 8 người tối mai ghép bàn...)'"
               :disabled="isLoading"
             />
             <button
@@ -238,7 +345,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from "vue";
+import { ref, computed, onMounted, nextTick } from "vue";
 import api from "../../services/api";
 import { useAuthStore } from "../../stores/authStore";
 
@@ -248,6 +355,9 @@ const isOpen = ref(false);
 const showWelcomeHint = ref(true);
 const isLoading = ref(false);
 const isSubmittingBooking = ref(false);
+const showMiniMenu = ref(false);
+const activeMenuTab = ref("ALL");
+
 const inputPrompt = ref("");
 const messagesContainer = ref(null);
 const inputField = ref(null);
@@ -255,6 +365,17 @@ const inputField = ref(null);
 const formCustomerName = ref("");
 const formCustomerPhone = ref("");
 const currentDraftBooking = ref(null);
+
+const activeReservations = ref([]);
+const selectedActiveReservation = ref(null);
+const allAvailableDishes = ref([]);
+
+const quickCategories = [
+  { key: "ALL", label: "Tất cả" },
+  { key: "CUA", label: "Cua & Hải sản" },
+  { key: "LAU", label: "Lẩu 3 Miền" },
+  { key: "KHAC", label: "Món Khác" },
+];
 
 const quickChips = [
   { icon: "🦀", label: "Gợi ý món ngon", text: "Gợi ý cho tôi các món đặc sản hải sản ngon nhất quán" },
@@ -266,7 +387,7 @@ const quickChips = [
 const messages = ref([
   {
     sender: "assistant",
-    text: "Chào Anh/Chị! Em là **Trợ Lý AI 3 Miền Cua** 🦀.\n\nEm có thể hỗ trợ Anh/Chị:\n• **Tư vấn món ăn** & đặc sản 3 miền.\n• **Tự động tìm & xếp bàn** chuẩn khung giờ.\n• **Tự động ghép bàn (Ghép cụm kề nhau)** cho đoàn đông 8 - 20 khách.\n• **Đặt trước món ăn (Pre-order)** sẵn sàng khi đến quán.\n\n*Anh/Chị cần hỗ trợ gì cứ nhắn cho em nhé!*",
+    text: "Chào Anh/Chị! Em là **Trợ Lý AI 3 Miền Cua** 🦀.\n\nEm có thể hỗ trợ Anh/Chị:\n• **Tư vấn món ăn** & đặc sản 3 miền.\n• **Tự động tìm & xếp bàn** chuẩn khung giờ.\n• **Tự động ghép bàn** cho đoàn đông 8 - 20 khách.\n• **Bổ sung món trực tiếp** vào bàn đã đặt sẵn.\n\n*Anh/Chị cần hỗ trợ gì cứ nhắn cho em nhé!*",
     time: formatTimeNow(),
   },
 ]);
@@ -281,6 +402,17 @@ function formatVND(val) {
   return Number(val).toLocaleString("vi-VN") + "đ";
 }
 
+function formatDateTime(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")} ngày ${d.toLocaleDateString("vi-VN")}`;
+}
+
+function formatTableNames(res) {
+  if (!res || !res.tables || res.tables.length === 0) return "Chờ xếp bàn";
+  return res.tables.map((t) => `Bàn ${t.tableNumber || t}`).join(" + ");
+}
+
 function formatMarkdown(text) {
   if (!text) return "";
   let html = text
@@ -288,16 +420,25 @@ function formatMarkdown(text) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
-  // Bold **text**
   html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-  // Italic *text*
   html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
-  // Code `code`
   html = html.replace(/`(.*?)`/g, "<code class='bg-light px-1 rounded text-danger font-xs'>$1</code>");
-  // Line breaks
   html = html.replace(/\n/g, "<br/>");
   return html;
 }
+
+const filteredMiniDishes = computed(() => {
+  if (activeMenuTab.value === "CUA") {
+    return allAvailableDishes.value.filter((d) => /cua|ghẹ|tôm|hải sản/i.test(d.name));
+  }
+  if (activeMenuTab.value === "LAU") {
+    return allAvailableDishes.value.filter((d) => /lẩu/i.test(d.name));
+  }
+  if (activeMenuTab.value === "KHAC") {
+    return allAvailableDishes.value.filter((d) => !/cua|ghẹ|tôm|hải sản|lẩu/i.test(d.name));
+  }
+  return allAvailableDishes.value;
+});
 
 const scrollToBottom = async () => {
   await nextTick();
@@ -311,6 +452,8 @@ const toggleChat = () => {
   if (isOpen.value) {
     showWelcomeHint.value = false;
     syncCustomerInfo();
+    fetchActiveReservations();
+    fetchMiniMenuDishes();
     scrollToBottom();
     nextTick(() => {
       inputField.value?.focus();
@@ -325,6 +468,39 @@ const syncCustomerInfo = () => {
   }
 };
 
+const fetchActiveReservations = async () => {
+  try {
+    const params = {};
+    if (formCustomerPhone.value) params.phone = formCustomerPhone.value;
+    const res = await api.get("/chatbot/active-reservations", { params });
+    if (res.data.reservations && res.data.reservations.length > 0) {
+      activeReservations.value = res.data.reservations;
+    }
+  } catch (err) {
+    console.warn("Could not fetch active reservations:", err);
+  }
+};
+
+const fetchMiniMenuDishes = async () => {
+  try {
+    if (allAvailableDishes.value.length === 0) {
+      const res = await api.get("/dishes?limit=50");
+      allAvailableDishes.value = res.data?.data?.dishes || res.data?.dishes || [];
+    }
+  } catch (err) {}
+};
+
+const selectActiveReservation = (res) => {
+  selectedActiveReservation.value = res;
+  messages.value.push({
+    sender: "assistant",
+    text: `🦀 Dạ em đang kết nối trực tiếp với lịch đặt bàn **${formatTableNames(res)} (${res.reservationCode})** lúc **${formatDateTime(res.startAt)}**.\n\nAnh/Chị muốn **bổ sung thêm món gì** cho bàn này ạ?`,
+    time: formatTimeNow(),
+  });
+  scrollToBottom();
+  nextTick(() => inputField.value?.focus());
+};
+
 const resetChat = () => {
   messages.value = [
     {
@@ -334,6 +510,7 @@ const resetChat = () => {
     },
   ];
   currentDraftBooking.value = null;
+  selectedActiveReservation.value = null;
   scrollToBottom();
 };
 
@@ -343,8 +520,12 @@ const sendQuickPrompt = (text) => {
 };
 
 const selectDishFromRecommendation = (dish) => {
-  const prompt = `Tôi muốn thêm món ${dish.name} vào danh sách đặt trước`;
-  inputPrompt.value = prompt;
+  if (selectedActiveReservation.value) {
+    inputPrompt.value = `Thêm 1 ${dish.name} vào bàn ${selectedActiveReservation.value.reservationCode}`;
+  } else {
+    inputPrompt.value = `Tôi muốn thêm món ${dish.name} vào danh sách đặt trước`;
+  }
+  showMiniMenu.value = false;
   sendMessage();
 };
 
@@ -367,6 +548,7 @@ const sendMessage = async () => {
     const payload = {
       prompt: text,
       currentBookingContext: currentDraftBooking.value,
+      selectedActiveReservation: selectedActiveReservation.value,
       customerName: formCustomerName.value,
       customerPhone: formCustomerPhone.value,
     };
@@ -384,6 +566,9 @@ const sendMessage = async () => {
       time: formatTimeNow(),
       dishes: data.dishes || null,
       bookingData: data.bookingData || null,
+      intent: data.intent || null,
+      dishesToAdd: data.dishesToAdd || null,
+      targetReservation: data.targetReservation || null,
     });
   } catch (err) {
     messages.value.push({
@@ -429,6 +614,7 @@ const handleConfirmBooking = async (bookingData) => {
     });
 
     currentDraftBooking.value = null;
+    fetchActiveReservations();
   } catch (err) {
     const errMsg = err.response?.data?.message || "Đặt bàn chưa thành công, vui lòng thử lại!";
     alert(errMsg);
@@ -438,8 +624,43 @@ const handleConfirmBooking = async (bookingData) => {
   }
 };
 
+const handleConfirmAddToExisting = async (dishesToAdd, targetRes) => {
+  isSubmittingBooking.value = true;
+  try {
+    const payload = {
+      reservationId: targetRes?._id,
+      reservationCode: targetRes?.reservationCode,
+      customerPhone: formCustomerPhone.value || targetRes?.customerPhone,
+      dishes: dishesToAdd,
+    };
+
+    const res = await api.post("/chatbot/add-dishes-to-booking", payload);
+    const updated = res.data.reservation;
+
+    let dishesSummary = (updated.preOrderDishes || [])
+      .map((it) => `• ${it.dish?.name || it.dishName || 'Món'} x ${it.quantity}`)
+      .join("\n");
+
+    messages.value.push({
+      sender: "assistant",
+      text: `✅ **ĐÃ BỔ SUNG MÓN VÀO BÀN [${updated.reservationCode}] THÀNH CÔNG!**\n\n🍽️ **Danh sách món hiện tại của bàn:**\n${dishesSummary}\n\n*Nhà hàng đã nhận được danh sách món và sẽ chuẩn bị chu đáo khi bạn đến quán nhé!*`,
+      time: formatTimeNow(),
+    });
+
+    selectedActiveReservation.value = null;
+    fetchActiveReservations();
+  } catch (err) {
+    const errMsg = err.response?.data?.message || "Bổ sung món chưa thành công, vui lòng thử lại!";
+    alert(errMsg);
+  } finally {
+    isSubmittingBooking.value = false;
+    scrollToBottom();
+  }
+};
+
 onMounted(() => {
   syncCustomerInfo();
+  fetchActiveReservations();
 });
 </script>
 
@@ -509,7 +730,7 @@ onMounted(() => {
   position: absolute;
   right: 75px;
   bottom: 5px;
-  width: 250px;
+  width: 260px;
   background: #ffffff;
   border-radius: 12px;
   padding: 10px 12px;
@@ -524,10 +745,10 @@ onMounted(() => {
 
 /* Chat window */
 .chat-window {
-  width: 390px;
+  width: 400px;
   max-width: calc(100vw - 32px);
-  height: 600px;
-  max-height: calc(100vh - 100px);
+  height: 620px;
+  max-height: calc(100vh - 90px);
   background: #f8fafc;
   display: flex;
   flex-direction: column;
@@ -573,6 +794,11 @@ onMounted(() => {
 .btn-icon-glass:hover {
   background: rgba(255, 255, 255, 0.3);
   color: #fff;
+}
+
+.active-res-banner {
+  background-color: #fef3c7;
+  border-bottom: 1px solid #fde68a;
 }
 
 /* Chat body */
@@ -662,12 +888,27 @@ onMounted(() => {
 }
 
 .btn-xs {
-  padding: 2px 8px;
+  padding: 3px 8px;
   font-size: 0.75rem;
 }
 
 .text-primary-orange {
   color: #ea580c;
+}
+
+.bg-primary-orange {
+  background-color: #ea580c !important;
+}
+
+.btn-primary-orange {
+  background-color: #ea580c;
+  color: #fff;
+  border: none;
+}
+
+.btn-primary-orange:hover {
+  background-color: #c2410c;
+  color: #fff;
 }
 
 .btn-orange-gradient {
@@ -687,6 +928,7 @@ onMounted(() => {
   background: #ea580c;
   border: none;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .btn-send-chat:hover:not(:disabled) {
@@ -709,6 +951,12 @@ onMounted(() => {
   background-color: #ffedd5 !important;
   color: #ea580c !important;
   border-color: #fdba74 !important;
+}
+
+.mini-menu-drawer {
+  background: #fff;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
 }
 
 /* Typing animation */
