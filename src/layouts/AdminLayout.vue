@@ -44,7 +44,7 @@
           <li class="nav-item">
             <router-link to="/admin/calendar" class="sidebar-link d-flex align-items-center gap-2 py-2 px-3 rounded-3" active-class="sidebar-link-active">
               <i class="fa-solid fa-calendar-days" style="width: 16px; text-align:center;"></i>
-              <span>{{ langStore.isEnglish ? 'Reservation Calendar' : 'Cuốn Lịch Đặt Bàn' }}</span>
+              <span>{{ langStore.isEnglish ? 'Reservation Calendar' : 'Lịch Đặt Bàn' }}</span>
             </router-link>
           </li>
           <li class="nav-item">

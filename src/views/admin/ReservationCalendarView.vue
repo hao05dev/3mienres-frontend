@@ -4,7 +4,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
       <div>
         <h2 class="fw-bold brand-font mb-1 text-dark">
-          <i class="fa-solid fa-calendar-days text-danger me-2"></i>Cuốn Lịch Đặt Bàn (Reservation Calendar)
+          <i class="fa-solid fa-calendar-days text-danger me-2"></i>Lịch Đặt Bàn (Reservation Calendar)
         </h2>
         <p class="text-muted small mb-0">
           Quan sát trực quan mật độ và lịch hẹn khách đặt bàn theo Ngày, Tuần và Toàn Tháng
@@ -148,36 +148,36 @@
 
     <!-- A. MONTH VIEW -->
     <div v-else-if="currentViewMode === 'month'" class="month-calendar-wrapper bg-white rounded-4 border shadow-2xs p-3">
-      <!-- Weekday Headers -->
-      <div class="row g-1 text-center fw-bold text-secondary mb-2" style="font-size: 0.78rem;">
-        <div class="col py-2 rounded-3 bg-light">Thứ Hai</div>
-        <div class="col py-2 rounded-3 bg-light">Thứ Ba</div>
-        <div class="col py-2 rounded-3 bg-light">Thứ Tư</div>
-        <div class="col py-2 rounded-3 bg-light">Thứ Năm</div>
-        <div class="col py-2 rounded-3 bg-light">Thứ Sáu</div>
-        <div class="col py-2 rounded-3 bg-light text-danger">Thứ Bảy</div>
-        <div class="col py-2 rounded-3 bg-light text-danger">Chủ Nhật</div>
+      <!-- Weekday Headers (7 columns) -->
+      <div class="calendar-grid-7 text-center fw-bold text-secondary mb-2" style="font-size: 0.78rem;">
+        <div class="weekday-header-cell py-2 rounded-3 bg-light">Thứ Hai</div>
+        <div class="weekday-header-cell py-2 rounded-3 bg-light">Thứ Ba</div>
+        <div class="weekday-header-cell py-2 rounded-3 bg-light">Thứ Tư</div>
+        <div class="weekday-header-cell py-2 rounded-3 bg-light">Thứ Năm</div>
+        <div class="weekday-header-cell py-2 rounded-3 bg-light">Thứ Sáu</div>
+        <div class="weekday-header-cell py-2 rounded-3 bg-light text-danger">Thứ Bảy</div>
+        <div class="weekday-header-cell py-2 rounded-3 bg-light text-danger">Chủ Nhật</div>
       </div>
 
-      <!-- Month Day Grid -->
-      <div class="row g-1">
+      <!-- Month Day Grid (7 columns CSS Grid) -->
+      <div class="calendar-grid-7">
         <div
           v-for="day in monthCalendarDays"
           :key="day.dateString"
-          class="col month-day-cell p-1.5 rounded-3 border position-relative transition-all"
+          class="month-day-cell p-2 rounded-3 border position-relative transition-all"
           :class="{
             'bg-light opacity-50': !day.isCurrentMonth,
-            'border-danger bg-danger bg-opacity-5': day.isToday,
+            'is-today-cell border-danger bg-danger bg-opacity-5': day.isToday,
             'bg-white': day.isCurrentMonth && !day.isToday,
           }"
           @click="openDayDetail(day)"
         >
           <!-- Day Header -->
-          <div class="d-flex justify-content-between align-items-center mb-1">
+          <div class="d-flex justify-content-between align-items-center mb-1.5">
             <span
               :class="[
                 'day-number-badge fs-8 fw-bold',
-                day.isToday ? 'bg-danger text-white rounded-circle' : (day.isCurrentMonth ? 'text-dark' : 'text-muted')
+                day.isToday ? 'bg-danger text-white rounded-circle shadow-2xs' : (day.isCurrentMonth ? 'text-dark' : 'text-muted')
               ]"
             >
               {{ day.dayNumber }}
@@ -188,20 +188,20 @@
           </div>
 
           <!-- Day Reservation Event Chips (Up to 3 chips) -->
-          <div class="day-events-list d-flex flex-column gap-1">
+          <div class="day-events-list d-flex flex-column gap-1 overflow-hidden">
             <div
               v-for="res in day.reservations.slice(0, 3)"
               :key="res._id"
-              class="calendar-event-chip p-1 rounded-2 cursor-pointer transition-all shadow-2xs"
+              class="calendar-event-chip p-1 px-1.5 rounded-2 cursor-pointer transition-all shadow-2xs"
               :class="statusChipClass(res.status)"
               @click.stop="openReservationDetail(res)"
               :title="`${res.reservationCode} - ${res.customerName} (${res.guestsCount} khách)`"
             >
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold fs-9 text-truncate" style="max-width: 90px;">
+              <div class="d-flex justify-content-between align-items-center gap-1">
+                <span class="fw-bold fs-9 text-truncate">
                   {{ formatHour(res.startAt) }} {{ res.customerName }}
                 </span>
-                <span class="fs-9 opacity-85">{{ res.guestsCount }}k</span>
+                <span class="fs-9 opacity-85 flex-shrink-0">{{ res.guestsCount }}k</span>
               </div>
             </div>
 
@@ -216,12 +216,12 @@
 
     <!-- B. WEEK VIEW -->
     <div v-else-if="currentViewMode === 'week'" class="week-calendar-wrapper bg-white rounded-4 border shadow-2xs p-3">
-      <div class="row g-2">
+      <div class="calendar-grid-7">
         <div
           v-for="day in weekDays"
           :key="day.dateString"
-          class="col-12 col-md week-day-column p-2 rounded-4 border bg-light"
-          :class="{ 'border-danger bg-danger bg-opacity-5': day.isToday }"
+          class="week-day-column p-2 rounded-4 border bg-light"
+          :class="{ 'border-danger bg-danger bg-opacity-5 is-today-cell': day.isToday }"
         >
           <!-- Column Header -->
           <div class="text-center p-2 rounded-3 bg-white border mb-2 shadow-2xs">
@@ -254,7 +254,7 @@
                 <span><i class="fa-solid fa-clock text-danger me-1"></i>{{ formatHour(res.startAt) }}</span>
                 <span><i class="fa-solid fa-user text-muted me-1"></i>{{ res.guestsCount }} khách</span>
               </div>
-              <div v-if="res.tables && res.tables.length > 0" class="mt-1 pt-1 border-top text-secondary fs-9">
+              <div v-if="res.tables && res.tables.length > 0" class="mt-1 pt-1 border-top text-secondary fs-9 text-truncate">
                 <i class="fa-solid fa-chair text-danger me-1"></i>Bàn:
                 <strong>{{ res.tables.map(t => t.tableNumber || t).join(', ') }}</strong>
               </div>
@@ -772,14 +772,31 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.calendar-grid-7 {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+}
+.weekday-header-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .month-day-cell {
-  min-height: 110px;
+  min-height: 115px;
   cursor: pointer;
   background-color: #fff;
+  display: flex;
+  flex-direction: column;
 }
 .month-day-cell:hover {
   border-color: #dc2626 !important;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.08);
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.12);
+  transform: translateY(-1px);
+}
+.is-today-cell {
+  border: 2px solid #dc2626 !important;
 }
 .day-number-badge {
   width: 24px;
@@ -790,13 +807,13 @@ onMounted(async () => {
 }
 .calendar-event-chip {
   font-size: 0.68rem;
-  line-height: 1.15;
+  line-height: 1.2;
 }
 .calendar-event-chip:hover {
-  transform: scale(1.03);
+  transform: scale(1.02);
 }
 .week-day-column {
-  min-height: 460px;
+  min-height: 480px;
 }
 .hover-lift {
   transition: all 0.2s ease;
