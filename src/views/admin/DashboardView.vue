@@ -370,6 +370,10 @@ const setPreset = (preset) => {
 };
 
 const fetchData = async () => {
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  if (!user || (user.role !== "admin" && user.role !== "manager")) {
+    return;
+  }
   loading.value = true;
   try {
     const params = {};

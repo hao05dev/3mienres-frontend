@@ -98,34 +98,41 @@ const router = createRouter({
 });
 
 // Guard kiểm tra đăng nhập & quyền truy cập theo từng vai trò (Role-based Access Control)
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, from) => {
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "null");
 
-  if (to.meta.requiresAuth) {
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
+
+  if (requiresAuth) {
     if (!token || !user) {
-      return next({ name: "login", query: { redirect: to.fullPath } });
+      return { name: "login", query: { redirect: to.fullPath } };
     }
 
-    // Nếu là nhân viên (staff) truy cập vào gốc /admin hoặc trang không có quyền -> Tự động chuyển thẳng vào POS
+    // Nếu là nhân viên (staff) truy cập vào gốc /admin hoặc trang không có quyền -> Chuyển thẳng vào POS
     if (user.role === "staff") {
       if (
         to.path === "/admin" ||
         to.path === "/admin/" ||
         to.name === "admin-dashboard" ||
-        (to.meta.roles && !to.meta.roles.includes("staff"))
+        to.matched.some((record) => record.meta.roles && !record.meta.roles.includes("staff"))
       ) {
-        return next({ name: "admin-pos" });
+        return { name: "admin-pos" };
       }
     }
 
-    if (to.meta.roles && !to.meta.roles.includes(user.role)) {
+    // Kiểm tra quyền truy cập của các vai trò khác
+    const isForbidden = to.matched.some(
+      (record) => record.meta.roles && !record.meta.roles.includes(user.role)
+    );
+
+    if (isForbidden) {
       toast.error("Bạn không có quyền truy cập vào chức năng này!");
-      return next(user.role === "staff" ? { name: "admin-pos" } : { name: "home" });
+      return user.role === "staff" ? { name: "admin-pos" } : { name: "home" };
     }
   }
 
-  next();
+  return true;
 });
 
 export default router;
