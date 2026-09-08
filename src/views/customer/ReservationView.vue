@@ -229,10 +229,19 @@ const validateAndNext = (step) => {
     if (!form.customerName.trim()) { stepError.value = "Vui lòng nhập họ và tên"; return; }
     if (!form.customerPhone.trim()) { stepError.value = "Vui lòng nhập số điện thoại"; return; }
     if (!form.guestsCount || form.guestsCount < 1) { stepError.value = "Vui lòng nhập số lượng khách hợp lệ (tối thiểu 1 người)"; return; }
+    // Nếu thời gian khởi tạo trước đó đã trôi vào quá khứ, tự động làm mới lại
+    if (!form.startAt || new Date(form.startAt) <= new Date()) {
+      initDefaultTime();
+    }
     currentStep.value = 2;
     fetchOccupiedTables();
   } else if (step === 2) {
-    if (!form.startAt) { stepError.value = "Vui lòng chọn thời gian bắt đầu"; return; }
+    if (!form.startAt) { stepError.value = "Vui lòng chọn thời gian bắt đầu dùng bữa"; return; }
+    const chosenTime = new Date(form.startAt);
+    if (Number.isNaN(chosenTime.getTime()) || chosenTime <= new Date()) {
+      stepError.value = "Thời gian bắt đầu phải là thời điểm hợp lệ trong tương lai. Vui lòng chọn lại ngày và giờ trước khi qua Bước 3!";
+      return;
+    }
     if (!form.tableIds || form.tableIds.length === 0) { stepError.value = "Vui lòng chọn 1 bàn mong muốn"; return; }
     currentStep.value = 3;
   }
