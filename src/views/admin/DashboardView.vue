@@ -403,24 +403,38 @@ const fetchData = async () => {
   }
 };
 
-const exportCsv = () => {
-  const headers = ["Khung Gio", "So Luot Don", "Doanh Thu (VND)"];
-  const rows = peakHoursData.value.map((p) => [
-    p.label,
-    p.orderCount,
-    p.revenue,
-  ]);
-  const csvContent =
-    "data:text/csv;charset=utf-8," +
-    [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `Bao_Cao_Gio_Cao_Diem_${startDate.value || 'today'}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  toast.success("Đã xuất báo cáo CSV thành công!");
+const exportCsv = async () => {
+  try {
+    const params = {};
+    if (startDate.value) params.startDate = startDate.value;
+    if (endDate.value) params.endDate = endDate.value;
+
+    const res = await api.get("/dashboard/export-invoices", {
+      params,
+      responseType: "blob",
+    });
+
+    const blob = new Blob([res.data], { type: "text/csv;charset=utf-8;" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `Bao_Cao_Doanh_Thu_3Mien_${startDate.value || "all"}_den_${endDate.value || "today"}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    toast.success(
+      langStore.isEnglish
+        ? "Sales & Revenue Excel report exported successfully!"
+        : "Đã xuất báo cáo tổng hợp doanh thu Excel (.csv) thành công!"
+    );
+  } catch (err) {
+    console.error("Lỗi xuất Excel:", err);
+    toast.error("Không thể xuất file báo cáo!");
+  }
 };
 
 onMounted(() => {
