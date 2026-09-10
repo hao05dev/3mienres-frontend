@@ -414,13 +414,15 @@ const exportCsv = async () => {
       responseType: "blob",
     });
 
-    const blob = new Blob([res.data], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([res.data], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute(
       "download",
-      `Bao_Cao_Doanh_Thu_3Mien_${startDate.value || "all"}_den_${endDate.value || "today"}.csv`
+      `Bao_Cao_Doanh_Thu_3Mien_${startDate.value || "all"}_den_${endDate.value || "today"}.xlsx`
     );
     document.body.appendChild(link);
     link.click();
@@ -428,8 +430,8 @@ const exportCsv = async () => {
     window.URL.revokeObjectURL(url);
     toast.success(
       langStore.isEnglish
-        ? "Sales & Revenue Excel report exported successfully!"
-        : "Đã xuất báo cáo tổng hợp doanh thu Excel (.csv) thành công!"
+        ? "Sales & Revenue Excel workbook (.xlsx) exported successfully!"
+        : "Đã xuất báo cáo tổng hợp doanh thu Excel (.xlsx) chuẩn tài chính thành công!"
     );
   } catch (err) {
     console.error("Lỗi xuất Excel:", err);
