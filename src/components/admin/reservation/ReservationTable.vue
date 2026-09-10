@@ -137,6 +137,26 @@
                 >
                   <i class="fa-solid fa-sliders"></i>
                 </button>
+                <!-- Nút Dời Lịch (Admin Reschedule) -->
+                <button
+                  v-if="res.status === 'CONFIRMED' || res.status === 'PENDING'"
+                  @click="$emit('admin-reschedule', res)"
+                  class="btn btn-outline-primary btn-sm rounded-pill px-2.5 py-1 fw-semibold fs-8"
+                  title="Dời lịch đặt bàn sang ngày giờ hoặc bàn khác"
+                >
+                  <i class="fa-solid fa-calendar-days me-1"></i> Dời Lịch
+                </button>
+
+                <!-- Nút Hủy Đơn (Admin Cancel) -->
+                <button
+                  v-if="res.status === 'CONFIRMED' || res.status === 'PENDING'"
+                  @click="$emit('admin-cancel', res)"
+                  class="btn btn-outline-danger btn-sm rounded-pill px-2.5 py-1 fs-8"
+                  title="Hủy đơn đặt bàn (Khách báo bận hoặc đổi kế hoạch)"
+                >
+                  <i class="fa-solid fa-ban me-1"></i> Hủy Đơn
+                </button>
+
                 <button
                   v-if="res.status === 'CONFIRMED' || res.status === 'PENDING'"
                   @click="$emit('mark-no-show', res)"
@@ -147,6 +167,7 @@
                 </button>
                 <span v-if="res.status === 'ARRIVED' || res.status === 'COMPLETED'" class="text-muted small fs-8">Đã vào bàn</span>
                 <span v-if="res.status === 'NO_SHOW'" class="text-muted small fs-8">Quá giờ hủy bàn</span>
+                <span v-if="res.status === 'CANCELLED'" class="text-danger small fs-8">Đã hủy</span>
               </div>
             </td>
           </tr>
@@ -196,7 +217,18 @@ defineProps({
   },
 });
 
-defineEmits(["page-change", "open-qr", "check-in", "custom-check-in", "confirm-deposit", "mark-no-show"]);
+defineEmits([
+  "page-change",
+  "open-qr",
+  "check-in",
+  "custom-check-in",
+  "confirm-deposit",
+  "mark-no-show",
+  "approve-reschedule",
+  "reject-reschedule",
+  "admin-reschedule",
+  "admin-cancel",
+]);
 </script>
 
 <style scoped>

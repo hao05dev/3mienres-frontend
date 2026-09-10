@@ -119,14 +119,28 @@
           <small class="text-secondary fs-9 d-block">{{ r.rescheduleRequest.reason || 'Nhà hàng đã hết bàn trống trong khung giờ yêu cầu.' }}</small>
         </div>
 
-        <!-- Action Buttons -->
-        <div v-if="r.status === 'CONFIRMED' || r.status === 'PENDING'" class="d-flex flex-column gap-2 mt-2">
-          <button @click="$emit('reschedule', r)" class="btn btn-outline-primary rounded-pill fw-semibold btn-sm">
-            <i class="fa-solid fa-calendar-days me-1"></i>
-            {{ r.rescheduleRequest?.status === 'PENDING' ? (isEnglish ? 'Change Request Time' : 'Đổi Giờ Khác') : (isEnglish ? 'Reschedule' : 'Dời Lịch') }}
-          </button>
-          <button @click="$emit('cancel', r)" class="btn btn-outline-danger rounded-pill fw-semibold btn-sm">
-            <i class="fa-solid fa-ban me-1"></i>
+        <!-- Hướng dẫn & Hotline Dời Lịch / Đổi Giờ Dùng Bữa -->
+        <div v-if="r.status === 'CONFIRMED' || r.status === 'PENDING'" class="p-3 bg-white rounded-4 border mb-2 shadow-2xs">
+          <div class="d-flex align-items-center gap-2 text-danger fw-bold fs-8 mb-1">
+            <i class="fa-solid fa-headset"></i>
+            <span>{{ isEnglish ? 'Need to Reschedule?' : 'Dời Lịch / Đổi Giờ Dùng Bữa' }}</span>
+          </div>
+          <p class="text-muted fs-9 mb-2" style="font-size: 0.76rem; line-height: 1.35;">
+            {{ isEnglish ? 'To reschedule or change table arrangements, please contact our Hotline directly so our manager can check real-time availability and arrange the best table for you.' : 'Để dời lịch hoặc đổi thời gian dùng bữa, Quý khách vui lòng liên hệ Hotline nhà hàng để Quản lý kiểm tra sơ đồ bàn và sắp xếp chỗ ngồi thích hợp nhất.' }}
+          </p>
+          <a
+            href="tel:0901234567"
+            class="btn btn-outline-danger btn-sm rounded-pill fw-bold w-100 d-flex align-items-center justify-content-center gap-1.5 fs-8 text-decoration-none"
+          >
+            <i class="fa-solid fa-phone-volume"></i>
+            {{ isEnglish ? 'Call Hotline: 0901 234 567' : 'Hotline: 0901 234 567' }}
+          </a>
+        </div>
+
+        <!-- Action Buttons (Chỉ còn Hủy Đặt Bàn) -->
+        <div v-if="r.status === 'CONFIRMED' || r.status === 'PENDING'" class="d-flex flex-column gap-2 mt-1">
+          <button @click="$emit('cancel', r)" class="btn btn-outline-secondary rounded-pill fw-semibold btn-sm">
+            <i class="fa-solid fa-ban me-1 text-danger"></i>
             {{ isEnglish ? 'Cancel Booking' : 'Hủy Đặt Bàn' }}
           </button>
         </div>

@@ -149,6 +149,47 @@ export const useReservationStore = defineStore("reservation", {
         throw new Error(err.response?.data?.message || "Từ chối dời lịch thất bại!");
       }
     },
+    async checkAvailability(startAt, guestsCount = 2, excludeReservationId = null) {
+      try {
+        const res = await api.get("/reservations/check-availability", {
+          params: { startAt, guestsCount, excludeReservationId },
+        });
+        return res.data.data;
+      } catch (err) {
+        throw new Error(err.response?.data?.message || "Lỗi kiểm tra bàn trống!");
+      }
+    },
+    async adminRescheduleReservation(reservationId, { startAt, tableIds, reason }) {
+      try {
+        const res = await api.patch(`/reservations/${reservationId}/admin-reschedule`, {
+          startAt,
+          tableIds,
+          reason,
+        });
+        await this.fetchAllReservations();
+        return res.data;
+      } catch (err) {
+        throw new Error(err.response?.data?.message || "Dời lịch đặt bàn thất bại!");
+      }
+    },
+    async adminCreateReservation(payload) {
+      try {
+        const res = await api.post("/reservations/admin-create", payload);
+        await this.fetchAllReservations();
+        return res.data;
+      } catch (err) {
+        throw new Error(err.response?.data?.message || "Tạo đơn đặt bàn thất bại!");
+      }
+    },
+    async adminCancelReservation(reservationId, reason = "") {
+      try {
+        const res = await api.patch(`/reservations/${reservationId}/admin-cancel`, { reason });
+        await this.fetchAllReservations();
+        return res.data;
+      } catch (err) {
+        throw new Error(err.response?.data?.message || "Hủy đơn đặt bàn thất bại!");
+      }
+    },
     async scanNoShow() {
       try {
         const res = await api.post("/reservations/scan-no-show");

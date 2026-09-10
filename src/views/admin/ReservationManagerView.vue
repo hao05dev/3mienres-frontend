@@ -12,8 +12,11 @@
       </div>
 
       <!-- Quick Search & Refresh -->
-      <div class="d-flex gap-2 align-items-center">
-        <div class="input-group input-group-sm" style="width: 240px;">
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        <button @click="showCreateModal = true" class="btn btn-danger btn-sm rounded-pill px-3 fw-bold shadow-2xs" title="Tạo đơn đặt bàn trực tiếp khi khách gọi qua Hotline">
+          <i class="fa-solid fa-plus me-1"></i> Đặt Bàn Mới (Hotline)
+        </button>
+        <div class="input-group input-group-sm" style="width: 220px;">
           <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
           <input
             v-model="search"
@@ -68,6 +71,8 @@
       @confirm-deposit="handleConfirmDeposit"
       @approve-reschedule="handleApproveReschedule"
       @reject-reschedule="handleRejectReschedule"
+      @admin-reschedule="openAdminReschedule"
+      @admin-cancel="openAdminCancel"
       @mark-no-show="handleMarkNoShow"
     />
 
@@ -102,7 +107,33 @@
       @submit="handleDepositModalSubmit"
     />
 
-    <!-- 7. Modal Xác Nhận Hành Động (Thay thế alert/confirm) -->
+    <!-- 7. Modal Quản Lý Dời Lịch Đặt Bàn (Admin Reschedule) -->
+    <AdminRescheduleModal
+      v-if="rescheduleModalReservation"
+      :reservation="rescheduleModalReservation"
+      :loading="rescheduleActionLoading"
+      @close="rescheduleModalReservation = null"
+      @submit="handleAdminRescheduleSubmit"
+    />
+
+    <!-- 8. Modal Quản Lý Tiếp Nhận Đặt Bàn Mới (Hotline / Walk-in) -->
+    <AdminCreateReservationModal
+      v-if="showCreateModal"
+      :loading="createActionLoading"
+      @close="showCreateModal = false"
+      @submit="handleAdminCreateSubmit"
+    />
+
+    <!-- 9. Modal Quản Lý Hủy Đơn Đặt Bàn (Admin Cancel) -->
+    <AdminCancelReservationModal
+      v-if="cancelModalReservation"
+      :reservation="cancelModalReservation"
+      :loading="cancelActionLoading"
+      @close="cancelModalReservation = null"
+      @submit="handleAdminCancelSubmit"
+    />
+
+    <!-- 10. Modal Xác Nhận Đánh Dấu No-Show -->
     <ConfirmModal
       :show="showNoShowConfirm"
       title="Xác nhận đánh dấu No-Show"
@@ -129,6 +160,9 @@ import ReservationQRModal from "../../components/admin/reservation/ReservationQR
 import CheckInCustomModal from "../../components/admin/reservation/CheckInCustomModal.vue";
 import TableTimelineModal from "../../components/admin/reservation/TableTimelineModal.vue";
 import DepositConfirmModal from "../../components/admin/reservation/DepositConfirmModal.vue";
+import AdminRescheduleModal from "../../components/admin/reservation/AdminRescheduleModal.vue";
+import AdminCreateReservationModal from "../../components/admin/reservation/AdminCreateReservationModal.vue";
+import AdminCancelReservationModal from "../../components/admin/reservation/AdminCancelReservationModal.vue";
 import ConfirmModal from "../../components/common/ConfirmModal.vue";
 
 const sessionStore = useSessionStore();
@@ -306,6 +340,68 @@ const handleScanNoShow = async () => {
 
 const showTimelineModal = ref(false);
 const customCheckInReservation = ref(null);
+
+// Modal Dời Lịch (Admin Reschedule)
+const rescheduleModalReservation = ref(null);
+const rescheduleActionLoading = ref(false);
+
+const openAdminReschedule = (reservation) => {
+  rescheduleModalReservation.value = reservation;
+};
+
+const handleAdminRescheduleSubmit = async ({ reservationId, startAt, tableIds, reason }) => {
+  rescheduleActionLoading.value = true;
+  try {
+    const res = await reservationStore.adminRescheduleReservation(reservationId, { startAt, tableIds, reason });
+    toast.success(res.message || "Đã dời lịch đặt bàn thành công!");
+    rescheduleModalReservation.value = null;
+    await fetchReservations();
+  } catch (err) {
+    toast.error("Lỗi dời lịch: " + err.message);
+  } finally {
+    rescheduleActionLoading.value = false;
+  }
+};
+
+// Modal Tạo Đơn Mới (Hotline / Walk-in)
+const showCreateModal = ref(false);
+const createActionLoading = ref(false);
+
+const handleAdminCreateSubmit = async (payload) => {
+  createActionLoading.value = true;
+  try {
+    const res = await reservationStore.adminCreateReservation(payload);
+    toast.success(res.message || "Tạo đơn đặt bàn qua Hotline thành công!");
+    showCreateModal.value = false;
+    await fetchReservations();
+  } catch (err) {
+    toast.error("Lỗi tạo đơn: " + err.message);
+  } finally {
+    createActionLoading.value = false;
+  }
+};
+
+// Modal Hủy Đơn (Admin Cancel)
+const cancelModalReservation = ref(null);
+const cancelActionLoading = ref(false);
+
+const openAdminCancel = (reservation) => {
+  cancelModalReservation.value = reservation;
+};
+
+const handleAdminCancelSubmit = async ({ reservationId, reason }) => {
+  cancelActionLoading.value = true;
+  try {
+    const res = await reservationStore.adminCancelReservation(reservationId, reason);
+    toast.success(res.message || "Đã hủy đơn đặt bàn thành công!");
+    cancelModalReservation.value = null;
+    await fetchReservations();
+  } catch (err) {
+    toast.error("Lỗi hủy đơn: " + err.message);
+  } finally {
+    cancelActionLoading.value = false;
+  }
+};
 
 const openCustomCheckIn = (reservation) => {
   customCheckInReservation.value = reservation;

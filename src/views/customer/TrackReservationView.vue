@@ -133,16 +133,6 @@
       </template>
     </div>
 
-    <!-- Reschedule Modal Component -->
-    <RescheduleModal
-      v-if="showRescheduleModal"
-      v-model="newStartAt"
-      :error="actionError"
-      :isEnglish="langStore.isEnglish"
-      @close="showRescheduleModal = false"
-      @submit="submitReschedule"
-    />
-
     <!-- Confirm Cancel Modal -->
     <ConfirmModal
       :show="showCancelConfirm"
@@ -168,7 +158,6 @@ import { useLangStore } from "../../stores/langStore";
 import { useRealtime } from "../../composables/useRealtime";
 import { toast } from "../../composables/useToast";
 import ReservationDetailPanel from "../../components/customer/ReservationDetailPanel.vue";
-import RescheduleModal from "../../components/customer/RescheduleModal.vue";
 import ConfirmModal from "../../components/common/ConfirmModal.vue";
 
 const route = useRoute();
