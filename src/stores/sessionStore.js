@@ -11,12 +11,16 @@ export const useSessionStore = defineStore("session", {
   }),
   actions: {
     async fetchActiveSessions() {
+      const token = localStorage.getItem("token");
+      if (!token) return;
       this.loading = true;
       try {
         const res = await api.get("/dining-sessions/active");
         this.activeSessions = res.data.data.activeSessions;
       } catch (err) {
-        console.error("Lỗi lấy danh sách bàn đang dùng bữa:", err);
+        if (err.response?.status !== 401) {
+          console.error("Lỗi lấy danh sách bàn đang dùng bữa:", err);
+        }
       } finally {
         this.loading = false;
       }

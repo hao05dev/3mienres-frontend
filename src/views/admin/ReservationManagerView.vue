@@ -163,6 +163,7 @@ import DepositConfirmModal from "../../components/admin/reservation/DepositConfi
 import AdminRescheduleModal from "../../components/admin/reservation/AdminRescheduleModal.vue";
 import AdminCreateReservationModal from "../../components/admin/reservation/AdminCreateReservationModal.vue";
 import AdminCancelReservationModal from "../../components/admin/reservation/AdminCancelReservationModal.vue";
+import api from "../../services/api";
 import ConfirmModal from "../../components/common/ConfirmModal.vue";
 
 const sessionStore = useSessionStore();
